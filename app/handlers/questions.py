@@ -311,7 +311,14 @@ async def _session_summary(
         text += ", ".join(item.label for item in view.current_targets[:3])
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=again_label, callback_data="pm:quick")],
+            [
+                InlineKeyboardButton(
+                    text=again_label,
+                    callback_data=(
+                        "pm:weak" if practice_session.session_kind == "test" else "pm:quick"
+                    ),
+                )
+            ],
             [
                 InlineKeyboardButton(
                     text=app.text("session.menu", practice_session.topic_id),

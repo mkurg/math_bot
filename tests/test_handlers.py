@@ -7,7 +7,7 @@ from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -103,6 +103,11 @@ async def test_student_menu_practice_question_and_daily_handlers(
     ]
     assert any("Выбери занятие" in text for text in rendered_messages)
     assert any("Мой прогресс" in text for text in rendered_messages)
+    assert any(
+        isinstance(call.kwargs.get("reply_markup"), InlineKeyboardMarkup)
+        and call.kwargs["reply_markup"].inline_keyboard[0][0].callback_data == "pm:weak"
+        for call in cast(AsyncMock, message.answer).await_args_list
+    )
 
     await practice.practice_callback(
         fake_callback(message, "m:practice", student.telegram_user_id, bot), app

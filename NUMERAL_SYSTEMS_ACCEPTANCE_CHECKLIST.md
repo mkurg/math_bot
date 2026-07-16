@@ -1,6 +1,6 @@
 # Numeral systems acceptance checklist
 
-Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9: `305 passed`, no skips, 85.34% overall coverage, Ruff clean, formatting clean, and strict mypy clean.
+Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9: `307 passed`, no skips, 85.36% overall coverage, Ruff clean, formatting clean, and strict mypy clean.
 
 ## Assignment and isolation
 

@@ -35,7 +35,7 @@ CONTENT_PATH = Path(__file__).with_name("content") / "strings.yaml"
 class TimesTablesModule:
     metadata = TopicMetadata(
         topic_id="times_tables",
-        version="1.0.0",
+        version="1.1.0",
         title_key="topic.title",
         short_title_key="topic.short_title",
         description_key="topic.description",
@@ -53,6 +53,7 @@ class TimesTablesModule:
         return (
             PracticeModeDefinition("quick", "mode.quick", "mode.quick.description", 5),
             PracticeModeDefinition("normal", "mode.normal", "mode.normal.description", 10),
+            PracticeModeDefinition("weak", "mode.weak", "mode.weak.description", 10),
             PracticeModeDefinition("table", "mode.table", "mode.table.description", 10),
             PracticeModeDefinition("multiplication", "mode.mul", "mode.mul.description", 10),
             PracticeModeDefinition("division", "mode.div", "mode.div.description", 10),
@@ -132,6 +133,11 @@ class TimesTablesModule:
         if mode_id == "table":
             table = int(configuration["table"])
             return tuple(fact_key("mul", table, factor) for factor in range(1, 11))
+        if mode_id == "weak":
+            weak_pairs = self._weak_factor_pairs(mastery)
+            if weak_pairs:
+                return weak_pairs
+            return tuple(key for key in all_keys if key.startswith("mul:"))
         if mode_id in {"quick", "normal", "mixed"}:
             eligible: list[str] = []
             for key in all_keys:
@@ -180,6 +186,16 @@ class TimesTablesModule:
             rng.shuffle(confidence)
             chosen.extend(confidence[: question_count - len(chosen)])
             rng.shuffle(chosen)
+        elif mode_id == "weak" and self._weak_factor_pairs(mastery):
+            ordered = list(eligible)
+            rng.shuffle(ordered)
+            ordered.sort(key=lambda key: self._weak_pair_rank(key, mastery), reverse=True)
+            chosen = []
+            while len(chosen) < question_count:
+                cycle = list(ordered)
+                if len(cycle) > 1 and chosen and cycle[0] == chosen[-1]:
+                    cycle.append(cycle.pop(0))
+                chosen.extend(cycle[: question_count - len(chosen)])
         else:
             weighted = weighted_skill_order(eligible, mastery, now, rng)
             chosen = []
@@ -195,12 +211,17 @@ class TimesTablesModule:
         mul_types = ("direct_multiplication", "missing_factor", "true_false", "visual", "story")
         div_types = ("direct_division", "missing_divisor", "story")
         blueprint: list[tuple[str, str]] = []
+        weak_occurrences: dict[str, int] = {}
         for index, key in enumerate(chosen):
             operation, _, _ = parse_skill_key(key)
             if mode_id == "multiplication":
                 question_type = rng.choice(("direct_multiplication", "missing_factor"))
             elif mode_id == "division":
                 question_type = rng.choice(("direct_division", "missing_divisor"))
+            elif mode_id == "weak":
+                occurrence = weak_occurrences.get(key, 0)
+                question_type = "direct_multiplication" if occurrence % 2 == 0 else "missing_factor"
+                weak_occurrences[key] = occurrence + 1
             elif mode_id != "mixed":
                 question_type = "direct_multiplication" if operation == "mul" else "direct_division"
                 if index and rng.random() < 0.3:
@@ -209,6 +230,45 @@ class TimesTablesModule:
                 question_type = rng.choice(mul_types if operation == "mul" else div_types)
             blueprint.append((key, question_type))
         return tuple(blueprint)
+
+    def _weak_factor_pairs(self, mastery: dict[str, MasteryState]) -> tuple[str, ...]:
+        weak: list[str] = []
+        for skill in self._skills:
+            key = skill.skill_key
+            if not key.startswith("mul:"):
+                continue
+            _, low, high = parse_skill_key(key)
+            states = (
+                mastery.get(fact_key("mul", low, high), MasteryState(key)),
+                mastery.get(
+                    fact_key("div", low, high),
+                    MasteryState(fact_key("div", low, high)),
+                ),
+            )
+            mistaken_states = [
+                state for state in states if state.attempt_count - state.correct_count > 0
+            ]
+            if mistaken_states and any(not is_mastered(state) for state in mistaken_states):
+                weak.append(key)
+        return tuple(weak)
+
+    @staticmethod
+    def _weak_pair_rank(
+        skill_key: str, mastery: dict[str, MasteryState]
+    ) -> tuple[int, float, int, int]:
+        _, low, high = parse_skill_key(skill_key)
+        states = (
+            mastery.get(fact_key("mul", low, high), MasteryState(skill_key)),
+            mastery.get(
+                fact_key("div", low, high),
+                MasteryState(fact_key("div", low, high)),
+            ),
+        )
+        attempts = sum(state.attempt_count for state in states)
+        mistakes = sum(state.attempt_count - state.correct_count for state in states)
+        best_box = max(state.box for state in states)
+        best_streak = max(state.consecutive_correct for state in states)
+        return mistakes, mistakes / max(1, attempts), -best_box, -best_streak
 
     def test_blueprint(
         self, test_id: str, configuration: dict[str, Any], rng: Random

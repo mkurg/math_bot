@@ -1,6 +1,6 @@
 from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from app.bot import Application
 from app.core.topics.contracts import TopicProgressView
@@ -52,6 +52,20 @@ async def progress(message: Message, app: Application) -> None:
         if not user:
             return
         view = await progress_for_user(session, app.registry, user)
+    reply_markup = None
+    if view.suggested_action:
+        action, separator, mode_id = view.suggested_action.action_id.partition(":")
+        if action == "practice" and separator and mode_id:
+            reply_markup = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text=view.suggested_action.label,
+                            callback_data=f"pm:{mode_id}",
+                        )
+                    ]
+                ]
+            )
     await message.answer(
         render_progress(
             view,
@@ -59,5 +73,6 @@ async def progress(message: Message, app: Application) -> None:
             strong_title=app.text("progress.strong", user.selected_topic_id),
             learning_title=app.text("progress.learning", user.selected_topic_id),
             recent_title=app.text("progress.recent", user.selected_topic_id),
-        )
+        ),
+        reply_markup=reply_markup,
     )

@@ -117,6 +117,7 @@ def test_practice_modes_and_division_prerequisite() -> None:
     assert {mode.mode_id for mode in module.practice_modes()} == {
         "quick",
         "normal",
+        "weak",
         "table",
         "multiplication",
         "division",
@@ -136,6 +137,41 @@ def test_practice_modes_and_division_prerequisite() -> None:
     }
     division = module.session_blueprint("division", 10, {}, {}, Random(5))
     assert {kind for _, kind in division} <= {"direct_division", "missing_divisor"}
+
+
+def test_weak_pairs_mode_uses_unresolved_mistakes_from_both_operations() -> None:
+    module = TimesTablesModule()
+    mastery = {
+        "mul:6:7": MasteryState("mul:6:7", box=0, attempt_count=5, correct_count=2),
+        "div:7:8": MasteryState("div:7:8", box=1, attempt_count=4, correct_count=2),
+        "mul:8:8": MasteryState("mul:8:8", box=3, attempt_count=4, correct_count=4),
+        "mul:5:9": MasteryState(
+            "mul:5:9",
+            box=5,
+            attempt_count=5,
+            correct_count=4,
+            consecutive_correct=3,
+            correct_dates=("2026-07-14", "2026-07-15", "2026-07-16"),
+        ),
+    }
+    blueprint = module.session_blueprint("weak", 10, mastery, {}, Random(6))
+    selected = [key for key, _ in blueprint]
+    assert set(selected) == {"mul:6:7", "mul:7:8"}
+    assert selected[0] == "mul:6:7"
+    assert {kind for _, kind in blueprint} == {"direct_multiplication", "missing_factor"}
+    assert "mul:8:8" not in selected
+    assert "mul:5:9" not in selected
+
+
+def test_weak_pairs_mode_falls_back_safely_before_first_mistake() -> None:
+    module = TimesTablesModule()
+    blueprint = module.session_blueprint("weak", 10, {}, {}, Random(7))
+    assert len(blueprint) == 10
+    assert all(key.startswith("mul:") for key, _ in blueprint)
+    assert {kind for _, kind in blueprint} <= {
+        "direct_multiplication",
+        "missing_factor",
+    }
 
 
 def test_learning_progress_daily_and_media() -> None:
