@@ -42,5 +42,5 @@ Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9
 
 ## Delivery
 
-- [ ] Production image with both topics is deployed and live polling is verified on Hetzner.
+- [x] Production image with both topics is deployed on Hetzner; Python 3.14.5, topic validation, live polling, and zero restarts were verified on 2026-07-16.
 - [ ] Telegram acceptance is completed from the assigned numeral-systems student account.
