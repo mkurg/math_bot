@@ -1,0 +1,130 @@
+topic.title: "Numeral Systems and Data Representation"
+topic.short_title: "Numeral Systems"
+topic.description: "Bases, conversions, bits, bytes, RGB colours, ASCII, and interpretation."
+
+menu.practice: "▶️ Practise"
+menu.learn: "🧭 Learn"
+menu.tests: "🧪 Challenges"
+menu.daily: "☀️ Daily task"
+menu.progress: "📊 My progress"
+menu.settings: "⚙️ Settings"
+practice.title: "Choose a numeral-systems practice mode:"
+tests.title: "Choose a challenge:"
+learn.title: "Choose an idea to explore:"
+
+mode.quick: "Quick mix — 5 tasks"
+mode.quick.description: "Concepts, conversions, and one representation application."
+mode.deep: "Deep session — 8 tasks"
+mode.deep.description: "Multi-step reasoning with conversions, errors, and transfer."
+mode.binary_decimal: "Binary and decimal"
+mode.binary_decimal.description: "Positional value, powers of two, conversion, and binary addition."
+mode.binary_octal: "Binary and octal"
+mode.binary_octal.description: "Three-bit grouping and conversion in both directions."
+mode.binary_hex: "Binary and hexadecimal"
+mode.binary_hex.description: "Four-bit grouping, hexadecimal digits, nibbles, and bytes."
+mode.four_systems: "All four systems"
+mode.four_systems.description: "Compare and convert binary, octal, decimal, and hexadecimal."
+mode.bits_bytes: "Bits and bytes"
+mode.bits_bytes.description: "Patterns, ranges, nibbles, bytes, and fixed width."
+mode.colours: "Colours"
+mode.colours.description: "RGB channels and six-digit hexadecimal colour codes."
+mode.characters: "Character codes"
+mode.characters.description: "ASCII codes in decimal, binary, and hexadecimal."
+mode.weak: "My developing skills"
+mode.weak.description: "Adaptive review of concepts that need another look."
+
+challenge.foundations: "Base Foundations Challenge — 10"
+challenge.binary_octal: "Binary–Octal Challenge — 10"
+challenge.binary_hex: "Binary–Hexadecimal Challenge — 12"
+challenge.four_systems: "Four Systems Challenge — 15"
+challenge.bits_bytes: "Bits and Bytes Challenge — 10"
+challenge.rgb: "RGB Challenge — 12"
+challenge.characters: "Character Code Challenge — 10"
+challenge.final: "Final Representation Challenge — 20"
+
+feedback.correct: "✅ Exactly."
+feedback.incorrect: "🌱 Not yet — follow the representation step by step."
+feedback.hint: "Structure: {hint}"
+
+learn.bases.title: "How bases work"
+learn.bases.body: |
+  The number is the value; a numeral is one way to write it.
+
+  In base b, positions from the right are b⁰, b¹, b², … and the available digit values are 0 through b−1. Therefore 10 in any base means one group of that base and zero units: 10₂ = 2₁₀, 10₈ = 8₁₀, and 10₁₆ = 16₁₀.
+
+  Worked idea: 2F₁₆ = 2 × 16 + 15 = 47₁₀.
+learn.binary.title: "Binary recap and diagnostic"
+learn.binary.body: |
+  Binary positions select powers of two. In 10110₂, the active positions are 16, 4, and 2, so its value is 22.
+
+  To build binary from decimal, decompose the value into powers of two or repeatedly use n = 2q + r. Binary addition carries because 1 + 1 = 10₂: two units in one position become one unit in the next.
+
+  This is a short recap; practice will revisit any idea that needs attention.
+learn.octal.title: "Binary ↔ Octal"
+learn.octal.body: |
+  Three bits make 2³ = 8 patterns, exactly matching the eight octal digits 0–7. That is why one octal digit matches three bits.
+
+  Binary → octal: group from the right in threes and pad only the leftmost group. Example: 1011011₂ → 001 011 011 → 133₈.
+
+  Octal → binary: replace every octal digit with exactly three bits. Example: 57₈ → 101 111 → 101111₂.
+learn.hex.title: "Binary ↔ Hexadecimal"
+learn.hex.body: |
+  Four bits make 2⁴ = 16 patterns, matching the sixteen hexadecimal digits 0–9 and A–F. A–F are digit symbols for values 10–15, not variables.
+
+  Binary → hexadecimal: group from the right in fours. Example: 10101111₂ → 1010 1111 → AF₁₆.
+
+  Hexadecimal → binary: replace every digit with four bits. Computers store bits; hexadecimal is compact notation for humans.
+learn.decimal.title: "Decimal conversions"
+learn.decimal.body: |
+  Decimal is one representation in the network, not the original form of every number.
+
+  For decimal → base b, use powers of b or repeated division by b. Example: 254 = 16 × 15 + 14, so 254₁₀ = FE₁₆.
+
+  For base b → decimal, multiply digits by their place values. Example: 157₈ = 1 × 64 + 5 × 8 + 7 = 111₁₀.
+learn.cross.title: "Octal ↔ Hexadecimal"
+learn.cross.body: |
+  Binary is a precise structural bridge between octal and hexadecimal.
+
+  Example: 73₈ → 111 011₂ → 0011 1011₂ → 3B₁₆. The value never changes; only the grouping does.
+
+  Converting through decimal can work, but the binary route reveals why these compact systems fit the same bit pattern.
+learn.bytes.title: "Bits, nibbles, and bytes"
+learn.bytes.body: |
+  A bit is one binary digit. Four bits form a nibble. Eight bits form a byte. One hexadecimal digit represents a nibble, so two hexadecimal digits represent one byte.
+
+  Eight bits have 2⁸ = 256 possible patterns. Counting from zero, an unsigned byte represents values 0 through 255. Pattern count 256 and maximum value 255 are different ideas.
+
+  Leading zeroes are optional for a numerical value, but useful when showing all eight positions of a byte.
+learn.rgb.title: "RGB colours"
+learn.rgb.body: |
+  In this simplified digital-colour model, red, green, and blue each use one byte from 0 through 255. Each channel therefore uses two hexadecimal digits, and a complete code uses six: #RRGGBB.
+
+  FF means maximum channel strength; 00 means absent. #FF0000 is full red, #00FF00 full green, #0000FF full blue, and #808080 has equal middle-strength channels.
+
+  RGB is a useful model here, not a complete theory of colour.
+learn.characters.title: "Character codes"
+learn.characters.body: |
+  A character is not itself binary or hexadecimal. An encoding assigns it a number, and that number can be written in different bases.
+
+  ASCII examples: A = 65₁₀ = 41₁₆ = 01000001₂; a = 97₁₀ = 61₁₆; character 0 = 48₁₀ = 30₁₆. The character 0 is not numerical zero.
+
+  ASCII covers only a small character set. Modern systems use larger standards such as Unicode; detailed Unicode and UTF-8 are outside this module.
+learn.interpretation.title: "Representation and meaning"
+learn.interpretation.body: |
+  The bit pattern 01000001 has unsigned value 65. Under ASCII interpretation, code 65 represents A. In another context, the same bits could be part of a colour channel or another data structure.
+
+  Bits do not carry their interpretation by themselves. A system or program decides what a pattern means.
+
+  Final idea: computers store patterns of bits; numbers, colours, and characters are interpretations of those patterns.
+learn.reference.title: "Reference tables"
+learn.reference.body: |
+  Powers of two: 1, 2, 4, 8, 16, 32, 64, 128
+  Powers of eight: 1, 8, 64
+  Powers of sixteen: 1, 16, 256
+
+  Octal bit groups: 000=0, 001=1, 010=2, 011=3, 100=4, 101=5, 110=6, 111=7
+
+  Hex bit groups: 0000=0, 0001=1, 0010=2, 0011=3, 0100=4, 0101=5, 0110=6, 0111=7, 1000=8, 1001=9, 1010=A, 1011=B, 1100=C, 1101=D, 1110=E, 1111=F
+
+  Selected ASCII: space=20₁₆, 0=30₁₆, A=41₁₆, B=42₁₆, a=61₁₆
+  RGB: black=#000000, white=#FFFFFF, red=#FF0000, green=#00FF00, blue=#0000FF

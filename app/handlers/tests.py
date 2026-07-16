@@ -24,12 +24,12 @@ async def show_tests(message: Message, app: Application, topic_id: str) -> None:
     ]
     rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:menu")])
     await message.answer(
-        app.content.get("tests.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
+        topic.content("tests.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
 
 
 @router.message(Command("test"))
-@router.message(F.text == "🎯 Tests")
+@router.message(F.text.in_({"🎯 Tests", "🧪 Challenges"}))
 async def test_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)

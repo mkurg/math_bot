@@ -24,6 +24,7 @@ def _mastery_state(row: SkillMastery) -> MasteryState:
         correct_count=row.correct_count,
         consecutive_correct=row.consecutive_correct,
         correct_dates=tuple(str(day) for day in dates[-3:]),
+        state=dict(row.topic_state),
     )
 
 

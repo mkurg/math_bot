@@ -35,7 +35,10 @@ async def delete_confirmation(callback: CallbackQuery, app: Application) -> None
     if not callback.message or not callback.data:
         return
     if callback.data == "del:no":
-        await show_main_menu(callback.message, app)
+        async with app.sessions() as session, session.begin():
+            user = await callback_actor(session, callback)
+        if user:
+            await show_main_menu(callback.message, app, user.selected_topic_id)
         return
     async with app.sessions() as session, session.begin():
         user = await callback_actor(session, callback)

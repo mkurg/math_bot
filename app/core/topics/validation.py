@@ -1,6 +1,13 @@
 from app.core.topics.contracts import TopicModule
 
-REGISTERED_ANSWER_MODES = {"single_choice", "true_false"}
+REGISTERED_ANSWER_MODES = {
+    "single_choice",
+    "true_false",
+    "binary_pad",
+    "octal_pad",
+    "decimal_pad",
+    "hexadecimal_pad",
+}
 
 
 def validate_topic_contract(module: TopicModule) -> list[str]:

@@ -44,7 +44,7 @@ def test_content_catalog_and_keyboards() -> None:
     assert catalog.get("welcome", name="Mira").startswith("👋 Welcome, Mira")
     with pytest.raises(KeyError):
         catalog.get("missing")
-    menu = main_menu(catalog)
+    menu = main_menu(TimesTablesModule())
     assert len(menu.keyboard) == 3
     assert menu.keyboard[0][0].text == "▶️ Practice"
     grid = table_grid("table")

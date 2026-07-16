@@ -52,15 +52,22 @@ async def show_settings(message: Message | InaccessibleMessage, app: Application
 async def settings_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
-    if user:
+    if user and user.settings:
         await show_settings(message, app)
+    elif user:
+        await message.answer(app.content.get("student_only"))
 
 
 @router.callback_query(F.data == "m:settings")
 async def settings_callback(callback: CallbackQuery, app: Application) -> None:
     await callback.answer()
     if callback.message:
-        await show_settings(callback.message, app)
+        async with app.sessions() as session, session.begin():
+            user = await callback_actor(session, callback)
+        if user and user.settings:
+            await show_settings(callback.message, app)
+        elif user:
+            await callback.message.answer(app.content.get("student_only"))
 
 
 @router.callback_query(F.data.startswith("sf:"))
@@ -74,6 +81,7 @@ async def set_frequency(callback: CallbackQuery, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await callback_actor(session, callback)
         if not user or not user.settings:
+            await callback.message.answer(app.content.get("student_only"))
             return
         user.settings.days_mask = value
         user.settings.reminders_enabled = value != "OFF"
@@ -97,6 +105,7 @@ async def set_hour(callback: CallbackQuery, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await callback_actor(session, callback)
         if not user or not user.settings:
+            await callback.message.answer(app.content.get("student_only"))
             return
         user.settings.local_hour = hour
         user.settings.updated_by_user_id = user.id

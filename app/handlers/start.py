@@ -1,7 +1,12 @@
 from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.filters.command import CommandObject
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    ReplyKeyboardRemove,
+)
 
 from app.bot import Application
 from app.handlers.common import show_main_menu
@@ -26,7 +31,15 @@ async def start(message: Message, command: CommandObject, app: Application) -> N
                 message.from_user.first_name,
                 message.from_user.username,
             )
-            await show_main_menu(message, app, "returning")
+            if user.role == "admin":
+                from app.handlers.admin import admin_keyboard
+
+                await message.answer("Teacher profile", reply_markup=ReplyKeyboardRemove())
+                await message.answer(
+                    app.content.get("admin.title"), reply_markup=admin_keyboard(app)
+                )
+                return
+            await show_main_menu(message, app, user.selected_topic_id, "returning")
             return
         argument = command.args or ""
         valid = argument.startswith("join_") and await app.invitations.validate(

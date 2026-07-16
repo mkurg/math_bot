@@ -95,6 +95,10 @@ class SampleTopic:
             {"equation": "one"},
         )
 
+    def retry_question_type(self, skill_key: str, question_type: str, rng: Random) -> str:
+        del skill_key, question_type, rng
+        return "choice"
+
     def progress_view(
         self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
     ) -> TopicProgressView:
@@ -115,6 +119,12 @@ class SampleTopic:
         correct = sum(bool(attempt["is_correct"]) for attempt in attempts)
         accuracy = round(correct / len(attempts) * 100) if attempts else 0
         return (Metric("Sample accuracy", f"{accuracy}%"),)
+
+    def teacher_insights(
+        self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
+    ) -> tuple[ProgressItem, ...]:
+        del mastery, metrics
+        return ()
 
     def render_media(self, renderer_id: str, payload: dict[str, Any]) -> bytes:
         del renderer_id, payload

@@ -22,24 +22,24 @@ async def show_learning(
     message: Message | InaccessibleMessage, app: Application, topic_id: str
 ) -> None:
     message = cast(Message, message)
-    units = app.registry.get(topic_id).learning_units()
+    topic = app.registry.get(topic_id)
+    units = topic.learning_units()
     buttons = [
         InlineKeyboardButton(
-            text="Full table" if unit.unit_id == "full_table" else f"×{unit.unit_id.split(':')[1]}",
+            text=topic.content(unit.title_key),
             callback_data=f"lu:{index}",
         )
         for index, unit in enumerate(units)
     ]
-    rows = [buttons[index : index + 5] for index in range(0, 10, 5)]
-    rows.append([buttons[-1]])
+    rows = [buttons[index : index + 2] for index in range(0, len(buttons), 2)]
     rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:menu")])
     await message.answer(
-        app.content.get("learn.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
+        topic.content("learn.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
 
 
 @router.message(Command("learn"))
-@router.message(F.text == "📚 Learn tables")
+@router.message(F.text.in_({"📚 Learn tables", "🧭 Learn"}))
 async def learning_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)

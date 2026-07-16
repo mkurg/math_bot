@@ -33,12 +33,12 @@ async def show_practice(
     ]
     rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:menu")])
     await message.answer(
-        app.content.get("practice.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
+        topic.content("practice.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
 
 
 @router.message(Command("practice"))
-@router.message(F.text == "▶️ Practice")
+@router.message(F.text.in_({"▶️ Practice", "▶️ Practise"}))
 async def practice_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)

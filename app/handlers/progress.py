@@ -31,6 +31,9 @@ def render_progress(view: TopicProgressView, title: str) -> str:
     lines.extend(item.label for item in view.strengths or ())
     lines.extend(("", "<b>Learning now</b>"))
     lines.extend(item.label for item in view.current_targets or ())
+    if view.recent_results:
+        lines.extend(("", "<b>Recent challenges/tests</b>"))
+        lines.extend(f"{item.label}: {item.value}" for item in view.recent_results)
     return "\n".join(lines)
 
 

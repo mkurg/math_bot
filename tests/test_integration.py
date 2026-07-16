@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from random import Random
 from unittest.mock import AsyncMock
 
 import pytest
@@ -19,13 +20,14 @@ from app.database.models import (
     StudentSettings,
     User,
 )
-from app.services.answers import AlreadyAnswered, submit_answer
+from app.services.answers import AlreadyAnswered, submit_answer, submit_constructed_answer
 from app.services.daily import prepare_daily_question
 from app.services.invitations import InvitationService
 from app.services.privacy import delete_student_data
-from app.services.sessions import next_question, start_session
-from app.services.statistics import progress_for_user
+from app.services.sessions import independent_question, next_question, start_session
+from app.services.statistics import progress_for_user, topic_group_metrics
 from app.services.users import create_student, ensure_initial_records
+from app.topics.numeral_systems import NumeralSystemsModule
 from app.topics.times_tables import TimesTablesModule
 from app.workers.daily_questions import deliver_due
 from tests.sample_topic import SampleTopic
@@ -45,14 +47,17 @@ def settings() -> Settings:
     )
 
 
-def registry(with_sample: bool = False) -> TopicRegistry:
+def registry(with_sample: bool = False, with_numeral: bool = False) -> TopicRegistry:
     result = TopicRegistry()
     result.register(TimesTablesModule())
+    enabled = ["times_tables"]
     if with_sample:
         result.register(SampleTopic())
-        result.configure(("times_tables", "sample_topic"), "times_tables")
-    else:
-        result.configure(("times_tables",), "times_tables")
+        enabled.append("sample_topic")
+    if with_numeral:
+        result.register(NumeralSystemsModule())
+        enabled.append("numeral_systems")
+    result.configure(tuple(enabled), "times_tables")
     return result
 
 
@@ -220,13 +225,69 @@ async def test_sample_topic_generic_session_and_daily_flow(
 
 
 @pytest.mark.asyncio
+async def test_two_real_topics_are_strictly_isolated_for_sessions_daily_and_progress(
+    db_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    times_student = await seed_student(db_sessions, telegram_id=701)
+    numeral_student = await seed_student(db_sessions, telegram_id=702)
+    module_registry = registry(with_numeral=True)
+    async with db_sessions() as session, session.begin():
+        times_user = await session.get(User, times_student.id)
+        numeral_user = await session.get(User, numeral_student.id)
+        assert times_user and numeral_user
+        numeral_user.selected_topic_id = "numeral_systems"
+
+        times_session = await start_session(
+            session, module_registry, times_user, "quick", "practice"
+        )
+        numeral_session = await start_session(
+            session, module_registry, numeral_user, "quick", "practice"
+        )
+        times_question = await next_question(session, module_registry, times_session)
+        numeral_question = await next_question(session, module_registry, numeral_session)
+        assert times_question and times_question.topic_id == "times_tables"
+        assert numeral_question and numeral_question.topic_id == "numeral_systems"
+
+        times_daily, times_daily_question = await prepare_daily_question(
+            session, module_registry, times_user
+        )
+        numeral_daily, numeral_daily_question = await prepare_daily_question(
+            session, module_registry, numeral_user
+        )
+        assert times_daily.topic_id == "times_tables"
+        assert times_daily_question and times_daily_question.topic_id == "times_tables"
+        assert numeral_daily.topic_id == "numeral_systems"
+        assert numeral_daily_question and numeral_daily_question.topic_id == "numeral_systems"
+
+        generated = module_registry.get("numeral_systems").generate_question(
+            "hexadecimal:dec_to_hex", "direct_conversion", Random(7)
+        )
+        constructed = independent_question(generated, numeral_user.id)
+        session.add(constructed)
+        await session.flush()
+        outcome = await submit_constructed_answer(
+            session,
+            module_registry,
+            numeral_user,
+            constructed.public_id,
+            str(generated.correct_answer["value"]),
+        )
+        assert outcome.evaluation.is_correct
+        numeral_progress = await progress_for_user(session, module_registry, numeral_user)
+        times_progress = await progress_for_user(session, module_registry, times_user)
+        assert numeral_progress.headline_metrics[0].value == "1"
+        assert times_progress.headline_metrics[0].value == "0"
+
+        breakdown = await topic_group_metrics(session)
+        assert {row[0] for row in breakdown} == {"times_tables", "numeral_systems"}
+
+
+@pytest.mark.asyncio
 async def test_daily_worker_sends_only_once(
     db_sessions: async_sessionmaker[AsyncSession],
 ) -> None:
     user = await seed_student(db_sessions)
-    now = datetime.now(UTC)
-    if not 7 <= now.astimezone().hour <= 20:
-        pytest.skip("worker delivery hours are 07:00 through 20:00")
+    now = datetime.now(UTC).replace(hour=17, minute=0, second=0, microsecond=0)
     async with db_sessions() as session, session.begin():
         student_settings = await session.get(StudentSettings, user.id)
         assert student_settings

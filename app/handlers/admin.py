@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import cast
 
 from aiogram import F, Router
@@ -11,11 +12,18 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     Message,
 )
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import selectinload
 
 from app.bot import Application
-from app.database.models import ClassSettings, PracticeSession, StudentSettings, User
+from app.database.models import (
+    ClassSettings,
+    DailyDelivery,
+    PracticeSession,
+    Question,
+    StudentSettings,
+    User,
+)
 from app.handlers.common import actor, callback_actor
 from app.handlers.progress import render_progress
 from app.handlers.settings import FREQUENCIES
@@ -23,6 +31,8 @@ from app.services.statistics import (
     difficult_skills,
     group_metrics,
     progress_for_user,
+    teacher_insights_for_user,
+    topic_group_metrics,
     user_metrics,
 )
 
@@ -95,7 +105,7 @@ async def student_list(callback: CallbackQuery, app: Application) -> None:
             await session.scalars(
                 select(User)
                 .options(selectinload(User.settings))
-                .where(User.role == "student", User.is_active.is_(True))
+                .where(User.role == "student")
                 .order_by(User.display_name, User.id)
                 .offset(page * 8)
                 .limit(9)
@@ -105,10 +115,13 @@ async def student_list(callback: CallbackQuery, app: Application) -> None:
         for student in students[:8]:
             metrics = await user_metrics(session, student.id, student.selected_topic_id)
             reminder = "on" if student.settings and student.settings.reminders_enabled else "off"
+            topic = app.registry.get(student.selected_topic_id)
             lines.append(
                 app.content.get(
                     "admin.student_line",
                     name=student.display_name,
+                    topic=topic.content(topic.metadata.short_title_key),
+                    status="active" if student.is_active else "paused",
                     last_active=student.last_seen_at.date().isoformat(),
                     questions=metrics["total"],
                     accuracy=metrics["accuracy"],
@@ -152,6 +165,8 @@ async def student_detail(callback: CallbackQuery, app: Application) -> None:
         if not student or student.role != "student":
             return
         view = await progress_for_user(session, app.registry, student)
+        insights = await teacher_insights_for_user(session, app.registry, student)
+        topic = app.registry.get(student.selected_topic_id)
         recent_tests = (
             await session.scalars(
                 select(PracticeSession)
@@ -169,8 +184,14 @@ async def student_detail(callback: CallbackQuery, app: Application) -> None:
             if student.settings and student.settings.reminders_enabled
             else "Off"
         )
-    text = render_progress(view, app.content.get("admin.student.title", name=student.display_name))
+    title = app.content.get("admin.student.title", name=student.display_name)
+    title += f" — {topic.content(topic.metadata.short_title_key)}"
+    text = render_progress(view, title)
     text += f"\n\nReminder: {reminder}"
+    if insights:
+        text += "\n\n<b>Teacher observations</b>\n" + "\n".join(
+            f"{item.label}: {item.value}" if item.value else item.label for item in insights
+        )
     if recent_tests:
         test_lines = "\n".join(
             f"{item.mode_id}: {item.correct_count}/{item.planned_question_count}"
@@ -183,6 +204,18 @@ async def student_detail(callback: CallbackQuery, app: Application) -> None:
                 InlineKeyboardButton(
                     text=app.content.get("admin.student.reminder"),
                     callback_data=f"adsf:{student.id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=app.content.get("admin.student.topic"),
+                    callback_data=f"adta:{student.id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=("Pause student" if student.is_active else "Activate student"),
+                    callback_data=f"adact:{student.id}",
                 )
             ],
             [
@@ -265,10 +298,113 @@ async def group_progress(callback: CallbackQuery, app: Application) -> None:
     async with app.sessions() as session:
         metrics = await group_metrics(session)
         difficult = await difficult_skills(session)
-    difficult_text = "\n".join(f"{key}: {count} mistakes" for key, count in difficult) or "None yet"
+        by_topic = await topic_group_metrics(session)
+    topic_lines = []
+    for topic_id, students, questions, accuracy in by_topic:
+        topic = app.registry.get(topic_id)
+        title = topic.content(topic.metadata.short_title_key)
+        topic_lines.append(
+            f"{title}: {students} students; {questions} questions; {accuracy}% accuracy"
+        )
+    difficult_lines = []
+    for topic_id, key, count in difficult:
+        topic = app.registry.get(topic_id)
+        title = topic.content(topic.metadata.short_title_key)
+        difficult_lines.append(f"{title} · {key}: {count} mistakes")
+    difficult_text = "\n".join(difficult_lines) or "None yet"
     await callback.message.answer(
-        app.content.get("admin.group.body", **metrics, difficult=difficult_text)
+        app.content.get(
+            "admin.group.body",
+            **metrics,
+            topics="\n".join(topic_lines) or "No active students",
+            difficult=difficult_text,
+        )
     )
+
+
+@router.callback_query(F.data.startswith("adta:"))
+async def student_topic_menu(callback: CallbackQuery, app: Application) -> None:
+    await callback.answer()
+    if not callback.message or not callback.data or not await authorized(callback, app):
+        return
+    student_id = int(callback.data.split(":", 1)[1])
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=topic.content(topic.metadata.title_key),
+                callback_data=f"adtv:{student_id}:{index}",
+            )
+        ]
+        for index, topic in enumerate(app.registry.enabled_topics())
+    ]
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=app.content.get("menu.back"), callback_data=f"adstu:{student_id}"
+            )
+        ]
+    )
+    await callback.message.answer(
+        app.content.get("admin.student.topic.choose"),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
+    )
+
+
+@router.callback_query(F.data.startswith("adtv:"))
+async def set_student_topic(callback: CallbackQuery, app: Application) -> None:
+    await callback.answer()
+    if not callback.message or not callback.data or not await authorized(callback, app):
+        return
+    _, student_text, index_text = callback.data.split(":")
+    student_id = int(student_text)
+    topics = app.registry.enabled_topics()
+    index = int(index_text)
+    if not 0 <= index < len(topics):
+        return
+    topic_id = topics[index].metadata.topic_id
+    now = datetime.now(UTC)
+    async with app.sessions() as session, session.begin():
+        student = await session.get(User, student_id, with_for_update=True)
+        if not student or student.role != "student":
+            return
+        await session.execute(
+            update(PracticeSession)
+            .where(PracticeSession.user_id == student.id, PracticeSession.status == "active")
+            .values(status="abandoned", completed_at=now)
+        )
+        await session.execute(
+            update(Question)
+            .where(Question.user_id == student.id, Question.status == "pending")
+            .values(status="expired")
+        )
+        await session.execute(
+            delete(DailyDelivery).where(
+                DailyDelivery.user_id == student.id,
+                DailyDelivery.status.in_(("pending", "sent", "failed")),
+            )
+        )
+        student.selected_topic_id = topic_id
+    await callback.message.answer(
+        app.content.get(
+            "admin.student.topic.saved",
+            topic=topics[index].content(topics[index].metadata.title_key),
+        )
+    )
+
+
+@router.callback_query(F.data.startswith("adact:"))
+async def toggle_student_active(callback: CallbackQuery, app: Application) -> None:
+    await callback.answer()
+    if not callback.message or not callback.data or not await authorized(callback, app):
+        return
+    student_id = int(callback.data.split(":", 1)[1])
+    async with app.sessions() as session, session.begin():
+        student = await session.get(User, student_id, with_for_update=True)
+        if not student or student.role != "student":
+            return
+        student.is_active = not student.is_active
+        active = student.is_active
+    await callback.message.answer("Student activated." if active else "Student paused.")
 
 
 async def show_defaults(message: Message | InaccessibleMessage, app: Application) -> None:

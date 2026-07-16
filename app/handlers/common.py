@@ -49,10 +49,14 @@ async def callback_actor(session: AsyncSession, callback: CallbackQuery) -> User
 
 
 async def show_main_menu(
-    message: Message | InaccessibleMessage, app: Application, text_key: str = "main_menu"
+    message: Message | InaccessibleMessage,
+    app: Application,
+    topic_id: str,
+    text_key: str = "main_menu",
 ) -> None:
     message = cast(Message, message)
-    await message.answer(app.content.get(text_key), reply_markup=main_menu(app.content))
+    topic = app.registry.get(topic_id)
+    await message.answer(app.content.get(text_key), reply_markup=main_menu(topic))
 
 
 async def send_question(

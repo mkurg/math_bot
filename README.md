@@ -1,6 +1,11 @@
-# Times Table Bot
+# Modular Mathematics Bot
 
-A private, invitation-only Telegram bot for learning multiplication and related exact division facts from 1 through 10. The Telegram platform is topic-independent; all mathematics lives behind the `TopicModule` contract.
+A private, invitation-only Telegram bot with two isolated learning modules:
+
+- **Times Tables** — multiplication and related exact division facts from 1 through 10;
+- **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation.
+
+Each student has one active assigned module. Menus, practice, challenges/tests, learning material, daily questions, mastery, and progress resolve through that assignment. The teacher sees students from both modules and may change an individual assignment without mixing historical topic data.
 
 The project targets Python 3.14, aiogram 3, PostgreSQL, async SQLAlchemy, Alembic, Pillow, and Docker Compose. It uses long polling, so no public domain, webhook, or TLS certificate is needed.
 
@@ -29,7 +34,7 @@ docker compose logs --tail=100 bot
 
 The normal bot container also runs `alembic upgrade head` before polling, making restarts safe. The explicit migration command above makes the schema step visible during first setup.
 
-Open `/admin` as the configured teacher, select **Invite link**, and generate the first invitation. Students join only through that deep link.
+Open `/admin` as the configured teacher, select **Invite link**, and generate the first invitation. Students join only through that deep link. Open a student’s detail page to change the active learning module, reminder schedule, or paused/active state.
 
 ## Environment variables
 
@@ -41,7 +46,7 @@ Open `/admin` as the configured teacher, select **Invite link**, and generate th
 - `DEFAULT_TIMEZONE`: IANA timezone, normally `Europe/Zurich`.
 - `DEFAULT_REMINDER_HOUR`: whole hour from 07 through 20.
 - `DEFAULT_REMINDER_DAYS`: `DAILY`, `WEEKDAYS`, `MWF`, or `OFF`.
-- `ENABLED_TOPIC_IDS`: comma-separated topic IDs; production uses `times_tables`.
+- `ENABLED_TOPIC_IDS`: comma-separated topic IDs; production uses `times_tables,numeral_systems`.
 - `DEFAULT_TOPIC_ID`: must be included in the enabled list.
 - `APP_ENV`: `development`, `test`, or `production`.
 - `LOG_LEVEL`: standard logging level such as `INFO`.
@@ -85,6 +90,8 @@ Regenerate deterministic assets with:
 python scripts/generate_times_table_images.py
 ```
 
+Numeral-systems diagrams and RGB swatches are rendered deterministically from reviewed payloads when they are sent; no runtime AI or downloaded media is used.
+
 ## Operations
 
 Follow logs without printing environment variables:
@@ -120,5 +127,4 @@ docker compose up -d bot
 
 Never place `.env`, `metadata.py`, a BotFather token, or a database dump in Git. Transfer production secrets directly to the server over SSH and restrict the file to the deployment user.
 
-See [TOPIC_DEVELOPMENT_GUIDE.md](TOPIC_DEVELOPMENT_GUIDE.md) for the extension contract and [ACCEPTANCE_CHECKLIST.md](ACCEPTANCE_CHECKLIST.md) for verification evidence.
-
+See [TOPIC_DEVELOPMENT_GUIDE.md](TOPIC_DEVELOPMENT_GUIDE.md) for the extension contract, [ACCEPTANCE_CHECKLIST.md](ACCEPTANCE_CHECKLIST.md) for the original times-table evidence, and [NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md](NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md) for the second module.

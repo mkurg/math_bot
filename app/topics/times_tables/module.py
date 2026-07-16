@@ -269,6 +269,16 @@ class TimesTablesModule:
             hint_payload=None if is_correct else {"hint": explanation.get("hint", "")},
         )
 
+    def retry_question_type(self, skill_key: str, question_type: str, rng: Random) -> str:
+        operation, _, _ = parse_skill_key(skill_key)
+        choices = (
+            ("missing_factor", "direct_multiplication", "true_false")
+            if operation == "mul"
+            else ("missing_divisor", "direct_division", "story")
+        )
+        alternatives = [item for item in choices if item != question_type]
+        return rng.choice(alternatives)
+
     def progress_view(
         self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
     ) -> TopicProgressView:
@@ -339,6 +349,12 @@ class TimesTablesModule:
                 correct = sum(bool(attempt["is_correct"]) for attempt in relevant)
                 metrics.append(Metric(label, f"{round(correct / len(relevant) * 100)}%"))
         return tuple(metrics)
+
+    def teacher_insights(
+        self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
+    ) -> tuple[ProgressItem, ...]:
+        del mastery
+        return (ProgressItem("Hints used", str(int(metrics.get("hints", 0)))),)
 
     def render_media(self, renderer_id: str, payload: dict[str, Any]) -> bytes:
         return images.render(renderer_id, payload)

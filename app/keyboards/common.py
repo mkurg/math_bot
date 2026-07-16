@@ -5,14 +5,14 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
-from app.content.loader import ContentCatalog
+from app.core.topics.contracts import TopicModule
 
 
-def main_menu(content: ContentCatalog) -> ReplyKeyboardMarkup:
+def main_menu(topic: TopicModule) -> ReplyKeyboardMarkup:
     rows = (
-        (content.get("menu.practice"), content.get("menu.learn")),
-        (content.get("menu.tests"), content.get("menu.daily")),
-        (content.get("menu.progress"), content.get("menu.settings")),
+        (topic.content("menu.practice"), topic.content("menu.learn")),
+        (topic.content("menu.tests"), topic.content("menu.daily")),
+        (topic.content("menu.progress"), topic.content("menu.settings")),
     )
     return ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text=label) for label in row] for row in rows],

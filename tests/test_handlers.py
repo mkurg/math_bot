@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from random import Random
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import AsyncMock
@@ -26,6 +27,7 @@ from app.handlers import (
 )
 from app.handlers import tests as test_handlers
 from app.services.invitations import InvitationService
+from app.services.sessions import independent_question
 from tests.test_integration import registry, seed_student
 from tests.test_integration import settings as integration_settings
 
@@ -65,12 +67,12 @@ def fake_callback(
     return cast(CallbackQuery, value)
 
 
-def make_app(maker: async_sessionmaker[AsyncSession]) -> Application:
+def make_app(maker: async_sessionmaker[AsyncSession], *, with_numeral: bool = False) -> Application:
     configured = integration_settings()
     return Application(
         configured,
         maker,
-        registry(),
+        registry(with_numeral=with_numeral),
         ContentCatalog(Path(__file__).parents[1] / "app" / "content" / "core" / "strings.yaml"),
         InvitationService(configured.bot_token, configured.bot_username),
     )
@@ -275,3 +277,77 @@ async def test_learning_test_privacy_and_admin_handlers(
     )
     async with db_sessions() as session:
         assert await session.get(User, student.id) is None
+
+
+@pytest.mark.asyncio
+async def test_numeral_student_pad_hint_menus_and_admin_assignment(
+    db_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    student = await seed_student(db_sessions, telegram_id=303)
+    app = make_app(db_sessions, with_numeral=True)
+    bot = AsyncMock()
+    message = fake_message(student.telegram_user_id, bot)
+    async with db_sessions() as session, session.begin():
+        stored = await session.get(User, student.id)
+        assert stored
+        stored.selected_topic_id = "numeral_systems"
+
+    await menu.menu_command(message, app)
+    await practice.practice_menu(message, app)
+    await learning.learning_menu(message, app)
+    await test_handlers.test_menu(message, app)
+    assert cast(AsyncMock, message.answer).await_count == 4
+    menu_markup = cast(AsyncMock, message.answer).await_args_list[0].kwargs["reply_markup"]
+    assert menu_markup.keyboard[0][1].text == "🧭 Learn"
+    await learning.learning_unit(fake_callback(message, "lu:7", student.telegram_user_id, bot), app)
+    await learning.learning_image(
+        fake_callback(message, "li:7", student.telegram_user_id, bot), app
+    )
+
+    topic = app.registry.get("numeral_systems")
+    generated = topic.generate_question("hexadecimal:dec_to_hex", "direct_conversion", Random(9))
+    async with db_sessions() as session, session.begin():
+        question = independent_question(generated, student.id)
+        session.add(question)
+        await session.flush()
+        public_id = question.public_id
+    await questions.show_hint(
+        fake_callback(message, f"h:{public_id}", student.telegram_user_id, bot), app
+    )
+    await questions.numeral_pad(
+        fake_callback(
+            message,
+            f"p:{public_id}:{generated.correct_answer['value']}:s",
+            student.telegram_user_id,
+            bot,
+        ),
+        app,
+    )
+    async with db_sessions() as session:
+        answered = await session.scalar(select(Question).where(Question.public_id == public_id))
+        assert answered and answered.status == "answered"
+        assert answered.prompt_payload["hint_count"] == 1
+
+    configured = integration_settings()
+    admin_message = fake_message(configured.admin_telegram_id, bot)
+    await admin.student_topic_menu(
+        fake_callback(
+            admin_message,
+            f"adta:{student.id}",
+            configured.admin_telegram_id,
+            bot,
+        ),
+        app,
+    )
+    await admin.set_student_topic(
+        fake_callback(
+            admin_message,
+            f"adtv:{student.id}:0",
+            configured.admin_telegram_id,
+            bot,
+        ),
+        app,
+    )
+    async with db_sessions() as session:
+        reassigned = await session.get(User, student.id)
+        assert reassigned and reassigned.selected_topic_id == "times_tables"

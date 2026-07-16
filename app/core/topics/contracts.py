@@ -14,6 +14,7 @@ class TopicMetadata:
     short_title_key: str
     description_key: str
     icon: str
+    daily_extended_actions: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +113,7 @@ class MasteryState:
     correct_count: int = 0
     consecutive_correct: int = 0
     correct_dates: tuple[str, ...] = ()
+    state: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -147,6 +149,7 @@ class TopicProgressView:
     strengths: tuple[ProgressItem, ...]
     current_targets: tuple[ProgressItem, ...]
     suggested_action: SuggestedAction | None = None
+    recent_results: tuple[Metric, ...] = ()
 
 
 class TopicModule(Protocol):
@@ -185,11 +188,17 @@ class TopicModule(Protocol):
         self, question_payload: dict[str, Any], selected_answer: dict[str, Any]
     ) -> EvaluationResult: ...
 
+    def retry_question_type(self, skill_key: str, question_type: str, rng: Random) -> str: ...
+
     def progress_view(
         self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
     ) -> TopicProgressView: ...
 
     def test_result_metrics(self, attempts: tuple[dict[str, Any], ...]) -> tuple[Metric, ...]: ...
+
+    def teacher_insights(
+        self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
+    ) -> tuple[ProgressItem, ...]: ...
 
     def daily_skill(
         self, mastery: dict[str, MasteryState], now: datetime, rng: Random

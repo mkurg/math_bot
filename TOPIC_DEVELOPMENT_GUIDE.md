@@ -56,11 +56,13 @@ The complete small example used by contract and modularity tests is in `tests/sa
 
 Evaluation receives the persisted question payload and selected answer payload. It returns correctness and feedback data; the core does not calculate mathematics.
 
+The reusable answer modes are now `single_choice`, `true_false`, `binary_pad`, `octal_pad`, `decimal_pad`, and `hexadecimal_pad`. Numeral pads persist their current value inside callback data, provide backspace/clear/submit controls, validate ownership and expiry, and still use the generic idempotent answer service. Progressive hints are also generic and store a bounded hint count in the question payload.
+
 ## Mastery and progress
 
 Map each question to one stable skill. The generic engine owns boxes 0–5, due timestamps, answer counts, and the minimum mastered rule. Topic code owns prerequisites, related skills, eligibility, group percentages, labels, strengths, targets, and test breakdowns.
 
-Keep `topic_state` small, bounded, and JSON-serializable. New topics fitting these generic payloads require no database migration.
+Keep `topic_state` small, bounded, and JSON-serializable. It may contain bounded evidence such as recent correct question formats or misconception counters. New topics fitting these generic payloads require no database migration.
 
 ## Learning content and media
 
@@ -83,4 +85,3 @@ pytest
 ```
 
 If a topic needs new durable data beyond bounded JSON payloads, design an explicit migration. Never reinterpret or rename an existing skill key after student data exists.
-

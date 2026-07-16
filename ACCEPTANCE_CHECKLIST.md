@@ -1,13 +1,13 @@
 # Acceptance checklist
 
-Evidence recorded on 2026-07-16 with Python 3.14.5, PostgreSQL 17.9, and Docker. Automated evidence: `239 passed`, 85.64% overall coverage, Ruff clean, formatting clean, strict mypy clean, topic/content validation passed, clean Alembic upgrade passed, and `alembic check` reported no model drift.
+Evidence recorded on 2026-07-16 with Python 3.14.5, PostgreSQL 17.9, and Docker. Current combined automated evidence: `298 passed`, no skips, 85.41% overall coverage, Ruff clean, formatting clean, strict mypy clean, topic/content validation passed, clean Alembic upgrade passed, and `alembic check` reported no model drift.
 
 ## A. Version-one scope
 
 - [x] Factors 1–10, no multiplication by zero, and exact related division are domain-tested.
 - [x] One teacher/one class, private chats, and invitation-only students are enforced.
-- [x] Only `times_tables` is enabled in production configuration.
-- [x] No audio, runtime AI, web dashboard, Mini App, leaderboard, or visible extra topic exists.
+- [x] Times-table students remain assigned only to `times_tables`; the separately specified `numeral_systems` module is isolated by student assignment.
+- [x] No audio, runtime AI, web dashboard, Mini App, leaderboard, or unrelated visible topic exists.
 
 ## B. Modular architecture
 
@@ -83,7 +83,7 @@ Evidence recorded on 2026-07-16 with Python 3.14.5, PostgreSQL 17.9, and Docker.
 
 - [x] `ruff check .` and `ruff format --check .` pass.
 - [x] `mypy app tests` passes in strict mode.
-- [x] `pytest` passes: 239 tests, no skips, 85.64% overall coverage.
+- [x] `pytest` passes: 298 tests, no skips, 85.41% overall coverage.
 - [x] Core/services/topic-domain coverage meets or exceeds 85%; overall exceeds 75%.
 - [x] Topic and content validators pass.
 - [x] Dependency lock, Dockerfile, Compose, persistent database volume, migration, environment example, README, backup/restore, and topic guide exist.
