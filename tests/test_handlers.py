@@ -96,6 +96,13 @@ async def test_student_menu_practice_question_and_daily_handlers(
     await settings.settings_menu(message, app)
     await privacy.privacy(message, app)
     assert cast(AsyncMock, message.answer).await_count >= 8
+    rendered_messages = [
+        call.args[0]
+        for call in cast(AsyncMock, message.answer).await_args_list
+        if call.args and isinstance(call.args[0], str)
+    ]
+    assert any("Выбери занятие" in text for text in rendered_messages)
+    assert any("Мой прогресс" in text for text in rendered_messages)
 
     await practice.practice_callback(
         fake_callback(message, "m:practice", student.telegram_user_id, bot), app
@@ -107,6 +114,11 @@ async def test_student_menu_practice_question_and_daily_handlers(
         fake_callback(message, "pt:7", student.telegram_user_id, bot), app
     )
     assert cast(AsyncMock, message.answer).await_count >= 11
+    assert any(
+        "<b>A</b>" in call.args[0] and "Вопрос 1 из" in call.args[0]
+        for call in cast(AsyncMock, message.answer).await_args_list
+        if call.args and isinstance(call.args[0], str)
+    )
 
     for _ in range(10):
         async with db_sessions() as session:
@@ -299,6 +311,13 @@ async def test_numeral_student_pad_hint_menus_and_admin_assignment(
     assert cast(AsyncMock, message.answer).await_count == 4
     menu_markup = cast(AsyncMock, message.answer).await_args_list[0].kwargs["reply_markup"]
     assert menu_markup.keyboard[0][1].text == "🧭 Learn"
+    practice_markup = cast(AsyncMock, message.answer).await_args_list[1].kwargs["reply_markup"]
+    tier_labels = [row[0].text for row in practice_markup.inline_keyboard[:3]]
+    assert tier_labels == [
+        "🌱 Tier 1 — Foundations (5)",
+        "🧩 Tier 2 — Guided grouping (6)",
+        "🏔 Tier 3 — Full curriculum (8)",
+    ]
     await learning.learning_unit(fake_callback(message, "lu:7", student.telegram_user_id, bot), app)
     await learning.learning_image(
         fake_callback(message, "li:7", student.telegram_user_id, bot), app

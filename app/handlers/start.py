@@ -18,7 +18,7 @@ router = Router(name="start")
 @router.message(CommandStart())
 async def start(message: Message, command: CommandObject, app: Application) -> None:
     if message.chat.type != "private":
-        await message.answer(app.content.get("private_only"))
+        await message.answer(app.text("private_only", app.settings.default_topic_id))
         return
     if message.from_user is None:
         return
@@ -46,7 +46,7 @@ async def start(message: Message, command: CommandObject, app: Application) -> N
             session, argument.removeprefix("join_")
         )
         if not valid:
-            await message.answer(app.content.get("invite_required"))
+            await message.answer(app.text("invite_required", app.settings.default_topic_id))
             return
         user = await create_student(
             session,
@@ -59,20 +59,30 @@ async def start(message: Message, command: CommandObject, app: Application) -> N
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=app.content.get("onboarding.quick"), callback_data="pm:quick"
+                    text=app.text("onboarding.quick", user.selected_topic_id),
+                    callback_data="pm:quick",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text=app.content.get("onboarding.reminders"), callback_data="m:settings"
+                    text=app.text("onboarding.reminders", user.selected_topic_id),
+                    callback_data="m:settings",
                 )
             ],
-            [InlineKeyboardButton(text=app.content.get("onboarding.menu"), callback_data="m:menu")],
+            [
+                InlineKeyboardButton(
+                    text=app.text("onboarding.menu", user.selected_topic_id),
+                    callback_data="m:menu",
+                )
+            ],
         ]
     )
-    await message.answer(app.content.get("welcome", name=user.display_name), reply_markup=keyboard)
+    await message.answer(
+        app.text("welcome", user.selected_topic_id, name=user.display_name),
+        reply_markup=keyboard,
+    )
 
 
 @router.message(F.chat.type != "private")
 async def group_message(message: Message, app: Application) -> None:
-    await message.answer(app.content.get("private_only"))
+    await message.answer(app.text("private_only", app.settings.default_topic_id))

@@ -17,3 +17,12 @@ class Application:
     registry: TopicRegistry
     content: ContentCatalog
     invitations: InvitationService
+
+    def text(self, key: str, topic_id: str | None = None, **values: object) -> str:
+        """Resolve student-facing text from the assigned topic, then fall back to core."""
+        if topic_id is not None:
+            try:
+                return self.registry.get(topic_id).content(key, **values)
+            except KeyError:
+                pass
+        return self.content.get(key, **values)

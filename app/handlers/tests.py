@@ -22,14 +22,16 @@ async def show_tests(message: Message, app: Application, topic_id: str) -> None:
         ]
         for item in topic.test_definitions()
     ]
-    rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:menu")])
+    rows.append(
+        [InlineKeyboardButton(text=app.text("menu.back", topic_id), callback_data="m:menu")]
+    )
     await message.answer(
         topic.content("tests.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
 
 
 @router.message(Command("test"))
-@router.message(F.text.in_({"🎯 Tests", "🧪 Challenges"}))
+@router.message(F.text.in_({"🎯 Tests", "🧪 Challenges", "🎯 Проверочные"}))
 async def test_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
@@ -44,9 +46,13 @@ async def choose_test(callback: CallbackQuery, app: Application) -> None:
         return
     test_id = callback.data.split(":", 1)[1]
     if test_id == "table":
-        await callback.message.answer(
-            app.content.get("tests.choose_table"), reply_markup=table_grid("tt")
-        )
+        async with app.sessions() as session, session.begin():
+            user = await callback_actor(session, callback)
+        if user:
+            await callback.message.answer(
+                app.text("tests.choose_table", user.selected_topic_id),
+                reply_markup=table_grid("tt"),
+            )
         return
     await _start_test(callback, app, test_id, {})
 
@@ -81,18 +87,28 @@ async def abandon_test_ask(callback: CallbackQuery, app: Application) -> None:
     if not callback.message or not callback.data:
         return
     session_id = int(callback.data.split(":")[1])
+    async with app.sessions() as session, session.begin():
+        user = await callback_actor(session, callback)
+        practice_session = await session.get(PracticeSession, session_id)
+        if not user or not practice_session or practice_session.user_id != user.id:
+            return
+        topic_id = practice_session.topic_id
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=app.content.get("test.abandon.yes"),
+                    text=app.text("test.abandon.yes", topic_id),
                     callback_data=f"txc:{session_id}",
                 )
             ],
-            [InlineKeyboardButton(text=app.content.get("delete.cancel"), callback_data="m:menu")],
+            [
+                InlineKeyboardButton(
+                    text=app.text("delete.cancel", topic_id), callback_data="m:menu"
+                )
+            ],
         ]
     )
-    await callback.message.answer(app.content.get("test.abandon.confirm"), reply_markup=keyboard)
+    await callback.message.answer(app.text("test.abandon.confirm", topic_id), reply_markup=keyboard)
 
 
 @router.callback_query(F.data.startswith("txc:"))
@@ -111,10 +127,11 @@ async def abandon_test_confirm(callback: CallbackQuery, app: Application) -> Non
             or practice_session.session_kind != "test"
         ):
             return
+        topic_id = practice_session.topic_id
         practice_session.status = "abandoned"
         await session.execute(
             update(Question)
             .where(Question.session_id == session_id, Question.status == "pending")
             .values(status="expired")
         )
-    await callback.message.answer(app.content.get("test.abandon.done"))
+    await callback.message.answer(app.text("test.abandon.done", topic_id))

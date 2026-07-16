@@ -2,10 +2,12 @@
 
 A private, invitation-only Telegram bot with two isolated learning modules:
 
-- **Times Tables** — multiplication and related exact division facts from 1 through 10;
-- **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation.
+- **Times Tables** — a fully Russian multiplication and related exact-division experience for factors 1 through 10;
+- **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation, with three progressive difficulty tiers.
 
 Each student has one active assigned module. Menus, practice, challenges/tests, learning material, daily questions, mastery, and progress resolve through that assignment. The teacher sees students from both modules and may change an individual assignment without mixing historical topic data.
+
+Long multiple-choice answers are printed in full below the question and selected with compact A/B/C/D buttons, avoiding Telegram's non-wrapping button-label limit. Numeral-systems Tier 1 teaches foundations without decimal conversion drills, Tier 2 uses small single-group binary↔octal/hexadecimal mappings, and Tier 3 retains the original complete difficulty.
 
 The project targets Python 3.14, aiogram 3, PostgreSQL, async SQLAlchemy, Alembic, Pillow, and Docker Compose. It uses long polling, so no public domain, webhook, or TLS certificate is needed.
 

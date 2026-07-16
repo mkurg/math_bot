@@ -21,7 +21,7 @@ async def menu_command(message: Message, app: Application) -> None:
             return
         await show_main_menu(message, app, user.selected_topic_id)
     else:
-        await message.answer(app.content.get("invite_required"))
+        await message.answer(app.text("invite_required", app.settings.default_topic_id))
 
 
 @router.callback_query(F.data == "m:menu")
@@ -43,7 +43,9 @@ async def menu_callback(callback: CallbackQuery, app: Application) -> None:
 
 @router.message(Command("help"))
 async def help_command(message: Message, app: Application) -> None:
-    await message.answer(app.content.get("help"))
+    async with app.sessions() as session, session.begin():
+        user = await actor(session, message)
+    await message.answer(app.text("help", user.selected_topic_id if user else None))
 
 
 @router.message(F.text)
@@ -51,7 +53,7 @@ async def unexpected_text(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if not user:
-        await message.answer(app.content.get("invite_required"))
+        await message.answer(app.text("invite_required", app.settings.default_topic_id))
         return
     if user.role == "admin":
         from app.handlers.admin import admin_keyboard
@@ -59,5 +61,5 @@ async def unexpected_text(message: Message, app: Application) -> None:
         await message.answer("Teacher profile", reply_markup=ReplyKeyboardRemove())
         await message.answer(app.content.get("admin.title"), reply_markup=admin_keyboard(app))
         return
-    await message.answer(app.content.get("use_buttons"))
+    await message.answer(app.text("use_buttons", user.selected_topic_id))
     await show_main_menu(message, app, user.selected_topic_id)

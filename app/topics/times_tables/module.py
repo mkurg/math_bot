@@ -113,7 +113,7 @@ class TimesTablesModule:
         tips = self.catalog.raw("tips")
         related = "\n".join(f"{table * quotient} ÷ {table} = {quotient}" for quotient in (6, 8, 9))
         return LearningView(
-            title=f"Table of {table}",
+            title=f"Таблица умножения на {table}",
             body=f"{facts}\n\n💡 {tips[str(table)]}",
             image_renderer_id="individual_table",
             image_payload={"table": table},
@@ -283,7 +283,7 @@ class TimesTablesModule:
         self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
     ) -> TopicProgressView:
         operation_progress: list[ProgressGroup] = []
-        for operation, label in (("mul", "Multiplication"), ("div", "Division")):
+        for operation, label in (("mul", "Умножение"), ("div", "Деление")):
             keys = [
                 skill.skill_key for skill in self._skills if skill.skill_key.startswith(operation)
             ]
@@ -317,15 +317,18 @@ class TimesTablesModule:
         )
         return TopicProgressView(
             headline_metrics=(
-                Metric("Total questions", str(int(metrics.get("total", 0)))),
-                Metric("Last 7 days", str(int(metrics.get("recent", 0)))),
-                Metric("7-day accuracy", f"{int(metrics.get('accuracy', 0))}%"),
-                Metric("Active days", str(int(metrics.get("active_days", 0)))),
+                Metric("Всего вопросов", str(int(metrics.get("total", 0)))),
+                Metric("За последние 7 дней", str(int(metrics.get("recent", 0)))),
+                Metric("Точность за 7 дней", f"{int(metrics.get('accuracy', 0))}%"),
+                Metric("Активных дней", str(int(metrics.get("active_days", 0)))),
             ),
-            progress_groups=(*operation_progress, ProgressGroup("Tables", 0, tuple(table_items))),
+            progress_groups=(
+                *operation_progress,
+                ProgressGroup("Таблицы", 0, tuple(table_items)),
+            ),
             strengths=strengths,
             current_targets=targets,
-            suggested_action=SuggestedAction("Practise weak facts", "practice:weak"),
+            suggested_action=SuggestedAction("Потренировать трудные примеры", "practice:weak"),
         )
 
     def daily_skill(
@@ -339,7 +342,10 @@ class TimesTablesModule:
 
     def test_result_metrics(self, attempts: tuple[dict[str, Any], ...]) -> tuple[Metric, ...]:
         metrics: list[Metric] = []
-        for operation, label in (("mul", "Multiplication accuracy"), ("div", "Division accuracy")):
+        for operation, label in (
+            ("mul", "Точность умножения"),
+            ("div", "Точность деления"),
+        ):
             relevant = [
                 attempt
                 for attempt in attempts
@@ -354,7 +360,7 @@ class TimesTablesModule:
         self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
     ) -> tuple[ProgressItem, ...]:
         del mastery
-        return (ProgressItem("Hints used", str(int(metrics.get("hints", 0)))),)
+        return (ProgressItem("Использовано подсказок", str(int(metrics.get("hints", 0)))),)
 
     def render_media(self, renderer_id: str, payload: dict[str, Any]) -> bytes:
         return images.render(renderer_id, payload)

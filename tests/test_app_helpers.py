@@ -46,7 +46,7 @@ def test_content_catalog_and_keyboards() -> None:
         catalog.get("missing")
     menu = main_menu(TimesTablesModule())
     assert len(menu.keyboard) == 3
-    assert menu.keyboard[0][0].text == "▶️ Practice"
+    assert menu.keyboard[0][0].text == "▶️ Тренировка"
     grid = table_grid("table")
     assert len(grid.inline_keyboard) == 3
     assert grid.inline_keyboard[0][0].callback_data == "table:1"

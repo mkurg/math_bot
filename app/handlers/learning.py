@@ -32,14 +32,16 @@ async def show_learning(
         for index, unit in enumerate(units)
     ]
     rows = [buttons[index : index + 2] for index in range(0, len(buttons), 2)]
-    rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:menu")])
+    rows.append(
+        [InlineKeyboardButton(text=app.text("menu.back", topic_id), callback_data="m:menu")]
+    )
     await message.answer(
         topic.content("learn.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
 
 
 @router.message(Command("learn"))
-@router.message(F.text.in_({"📚 Learn tables", "🧭 Learn"}))
+@router.message(F.text.in_({"📚 Learn tables", "🧭 Learn", "📚 Учить таблицу"}))
 async def learning_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
@@ -68,7 +70,8 @@ async def learning_unit(callback: CallbackQuery, app: Application) -> None:
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=app.content.get("learn.practice"), callback_data=f"lp:{index}"
+                    text=app.text("learn.practice", user.selected_topic_id),
+                    callback_data=f"lp:{index}",
                 )
             ]
         )
@@ -76,7 +79,8 @@ async def learning_unit(callback: CallbackQuery, app: Application) -> None:
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=app.content.get("learn.picture"), callback_data=f"li:{index}"
+                    text=app.text("learn.picture", user.selected_topic_id),
+                    callback_data=f"li:{index}",
                 )
             ]
         )
@@ -84,11 +88,18 @@ async def learning_unit(callback: CallbackQuery, app: Application) -> None:
         rows.append(
             [
                 InlineKeyboardButton(
-                    text=app.content.get("learn.division"), callback_data=f"ld:{index}"
+                    text=app.text("learn.division", user.selected_topic_id),
+                    callback_data=f"ld:{index}",
                 )
             ]
         )
-    rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:learn")])
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=app.text("menu.back", user.selected_topic_id), callback_data="m:learn"
+            )
+        ]
+    )
     await callback.message.answer(
         f"<b>{view.title}</b>\n\n{view.body}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
@@ -142,7 +153,8 @@ async def learning_division(callback: CallbackQuery, app: Application) -> None:
     result = await _learning_context(callback, app)
     if result and result[3].related_text:
         await callback.message.answer(
-            f"<b>{app.content.get('learn.related_title')}</b>\n\n{result[3].related_text}"
+            f"<b>{app.text('learn.related_title', result[0].selected_topic_id)}</b>"
+            f"\n\n{result[3].related_text}"
         )
 
 

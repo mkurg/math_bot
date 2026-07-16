@@ -153,7 +153,7 @@ def generate(
             kind=question_type,
             prompt=content("prompt.visual", rows=first, columns=second),
             correct=product,
-            equation=f"{first} groups of {second} = {product}",
+            equation=content("equation.groups", first=first, second=second, product=product),
             hint=content("hint.visual", rows=first, columns=second),
             options=_answers(product, second, rng),
             payload={"operation": "mul", "first": first, "second": second},

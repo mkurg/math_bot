@@ -237,6 +237,46 @@ def _direct_conversion(skill_key: str, question_type: str, rng: Random) -> Gener
     )
 
 
+def _guided_conversion(
+    skill_key: str, question_type: str, rng: Random, *, constructed: bool = False
+) -> GeneratedQuestion:
+    """A single bit-group conversion for the two introductory tiers."""
+    try:
+        source, target = CONVERSIONS[skill_key]
+    except KeyError as exc:
+        raise ValueError(f"skill does not define a direct conversion: {skill_key}") from exc
+    if 10 in {source, target}:
+        raise ValueError("guided conversions intentionally avoid decimal")
+    maximum = 7 if 8 in {source, target} else 15
+    value = rng.randint(1, maximum)
+    target_value = digits(value, target)
+    explanation, hints = _conversion_explanation(value, source, target)
+    prompt = f"Use one bit group: convert {labelled(value, source)} to {BASE_NAMES[target]}."
+    if constructed:
+        return _pad(
+            skill_key,
+            question_type,
+            f"{prompt} Build only the base-{target} digits.",
+            target_value,
+            target,
+            explanation,
+            hints,
+            "uses the wrong bit-group mapping",
+        )
+    return _choice(
+        skill_key,
+        question_type,
+        f"{prompt} Which answer matches?",
+        labelled(value, target),
+        target_value,
+        _number_distractors(value, target),
+        explanation,
+        hints,
+        "uses the wrong bit-group mapping",
+        rng,
+    )
+
+
 def _positional_expansion(skill_key: str, question_type: str, rng: Random) -> GeneratedQuestion:
     base = rng.choice((2, 8, 16))
     value = rng.randint(base + 1, min(255, base * base - 1))
@@ -492,8 +532,10 @@ def _explanation_selection(skill_key: str, question_type: str, rng: Random) -> G
     )
 
 
-def _bit_count(skill_key: str, question_type: str, rng: Random) -> GeneratedQuestion:
-    count = rng.randint(2, 8)
+def _bit_count(
+    skill_key: str, question_type: str, rng: Random, *, maximum: int = 8
+) -> GeneratedQuestion:
+    count = rng.randint(1 if maximum <= 4 else 2, maximum)
     patterns = 2**count
     return _choice(
         skill_key,
@@ -885,6 +927,10 @@ def _meaning_ten(skill_key: str, question_type: str, rng: Random) -> GeneratedQu
 def generate(skill_key: str, question_type: str, rng: Random) -> GeneratedQuestion:
     if question_type in {"direct_conversion", "cross_conversion"}:
         return _direct_conversion(skill_key, question_type, rng)
+    if question_type == "guided_conversion":
+        return _guided_conversion(skill_key, question_type, rng)
+    if question_type == "guided_conversion_pad":
+        return _guided_conversion(skill_key, question_type, rng, constructed=True)
     if question_type == "positional_expansion":
         return _positional_expansion(skill_key, question_type, rng)
     if question_type == "base_identification":
@@ -903,6 +949,8 @@ def generate(skill_key: str, question_type: str, rng: Random) -> GeneratedQuesti
         return _explanation_selection(skill_key, question_type, rng)
     if question_type == "bit_count":
         return _bit_count(skill_key, question_type, rng)
+    if question_type == "bit_count_easy":
+        return _bit_count(skill_key, question_type, rng, maximum=4)
     if question_type == "byte_range":
         return _range_question(skill_key, question_type, rng)
     if question_type == "byte_decomposition":

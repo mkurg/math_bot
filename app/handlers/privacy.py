@@ -11,7 +11,9 @@ router = Router(name="privacy")
 
 @router.message(Command("privacy"))
 async def privacy(message: Message, app: Application) -> None:
-    await message.answer(app.content.get("privacy"))
+    async with app.sessions() as session, session.begin():
+        user = await actor(session, message)
+    await message.answer(app.text("privacy", user.selected_topic_id if user else None))
 
 
 @router.message(Command("delete_me"))
@@ -22,11 +24,21 @@ async def delete_me(message: Message, app: Application) -> None:
         return
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=app.content.get("delete.confirm"), callback_data="del:yes")],
-            [InlineKeyboardButton(text=app.content.get("delete.cancel"), callback_data="del:no")],
+            [
+                InlineKeyboardButton(
+                    text=app.text("delete.confirm", user.selected_topic_id),
+                    callback_data="del:yes",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=app.text("delete.cancel", user.selected_topic_id),
+                    callback_data="del:no",
+                )
+            ],
         ]
     )
-    await message.answer(app.content.get("delete.warning"), reply_markup=keyboard)
+    await message.answer(app.text("delete.warning", user.selected_topic_id), reply_markup=keyboard)
 
 
 @router.callback_query(F.data.startswith("del:"))
@@ -44,5 +56,6 @@ async def delete_confirmation(callback: CallbackQuery, app: Application) -> None
         user = await callback_actor(session, callback)
         if not user or user.role != "student":
             return
+        topic_id = user.selected_topic_id
         await delete_student_data(session, user)
-    await callback.message.answer(app.content.get("delete.done"))
+    await callback.message.answer(app.text("delete.done", topic_id))

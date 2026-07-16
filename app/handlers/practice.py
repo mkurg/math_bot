@@ -31,21 +31,23 @@ async def show_practice(
         ]
         for mode in topic.practice_modes()
     ]
-    rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:menu")])
+    rows.append(
+        [InlineKeyboardButton(text=app.text("menu.back", topic_id), callback_data="m:menu")]
+    )
     await message.answer(
         topic.content("practice.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
 
 
 @router.message(Command("practice"))
-@router.message(F.text.in_({"▶️ Practice", "▶️ Practise"}))
+@router.message(F.text.in_({"▶️ Practice", "▶️ Practise", "▶️ Тренировка"}))
 async def practice_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if user:
         await show_practice(message, app, user.selected_topic_id)
     else:
-        await message.answer(app.content.get("invite_required"))
+        await message.answer(app.text("invite_required", app.settings.default_topic_id))
 
 
 @router.callback_query(F.data == "m:practice")
@@ -71,7 +73,8 @@ async def choose_mode(callback: CallbackQuery, app: Application) -> None:
             return
         if mode_id == "table":
             await callback.message.answer(
-                app.content.get("practice.choose_table"), reply_markup=table_grid("pt")
+                app.text("practice.choose_table", user.selected_topic_id),
+                reply_markup=table_grid("pt"),
             )
             return
         practice_session = await start_session(session, app.registry, user, mode_id, "practice")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict
 from datetime import UTC, datetime
 from random import Random
@@ -166,6 +167,56 @@ def test_learning_progress_daily_and_media() -> None:
     assert module.render_media("individual_table", {"table": 7}).startswith(b"\x89PNG")
     assert module.render_media("array", {"rows": 4, "columns": 6}).startswith(b"\x89PNG")
     assert module.render_media("mascot", {}).startswith(b"\x89PNG")
+
+
+def test_times_tables_student_experience_is_fully_russian() -> None:
+    module = TimesTablesModule()
+    russian_ui_keys = (
+        "topic.title",
+        "menu.practice",
+        "menu.learn",
+        "menu.tests",
+        "menu.daily",
+        "menu.progress",
+        "menu.settings",
+        "practice.title",
+        "tests.title",
+        "learn.title",
+        "welcome",
+        "returning",
+        "main_menu",
+        "use_buttons",
+        "question.position",
+        "question.next",
+        "question.hint",
+        "session.summary",
+        "test.summary",
+        "daily.title",
+        "progress.title",
+        "settings.title",
+        "privacy",
+        "delete.warning",
+        "help",
+    )
+    format_values = {
+        "name": "Ученик",
+        "position": 1,
+        "total": 5,
+        "correct": 4,
+        "skills": 3,
+        "percentage": 80,
+    }
+    for key in russian_ui_keys:
+        assert re.search(r"[А-Яа-яЁё]", module.content(key, **format_values))
+    assert all(
+        re.search(r"[А-Яа-яЁё]", story)
+        for kind in ("mul", "div")
+        for story in module.catalog.raw(f"story.{kind}")
+    )
+    view = module.render_learning_unit("table:7")
+    assert "Таблица умножения" in view.title
+    progress = module.progress_view({}, {})
+    assert all(re.search(r"[А-Яа-яЁё]", metric.label) for metric in progress.headline_metrics)
 
 
 def test_topic_validation_and_invalid_inputs() -> None:

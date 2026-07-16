@@ -10,7 +10,14 @@ from app.services.statistics import progress_for_user
 router = Router(name="progress")
 
 
-def render_progress(view: TopicProgressView, title: str) -> str:
+def render_progress(
+    view: TopicProgressView,
+    title: str,
+    *,
+    strong_title: str = "Strong areas",
+    learning_title: str = "Learning now",
+    recent_title: str = "Recent challenges/tests",
+) -> str:
     lines = [f"<b>{title}</b>", ""]
     lines.extend(f"{metric.label}: {metric.value}" for metric in view.headline_metrics)
     for group in view.progress_groups:
@@ -27,22 +34,30 @@ def render_progress(view: TopicProgressView, title: str) -> str:
         else:
             filled = min(10, max(0, round(group.percentage / 10)))
             lines.append(f"{'█' * filled}{'░' * (10 - filled)} {group.percentage}%")
-    lines.extend(("", "<b>Strong areas</b>"))
+    lines.extend(("", f"<b>{strong_title}</b>"))
     lines.extend(item.label for item in view.strengths or ())
-    lines.extend(("", "<b>Learning now</b>"))
+    lines.extend(("", f"<b>{learning_title}</b>"))
     lines.extend(item.label for item in view.current_targets or ())
     if view.recent_results:
-        lines.extend(("", "<b>Recent challenges/tests</b>"))
+        lines.extend(("", f"<b>{recent_title}</b>"))
         lines.extend(f"{item.label}: {item.value}" for item in view.recent_results)
     return "\n".join(lines)
 
 
 @router.message(Command("progress"))
-@router.message(F.text == "📊 My progress")
+@router.message(F.text.in_({"📊 My progress", "📊 Мой прогресс"}))
 async def progress(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
         if not user:
             return
         view = await progress_for_user(session, app.registry, user)
-    await message.answer(render_progress(view, app.content.get("progress.title")))
+    await message.answer(
+        render_progress(
+            view,
+            app.text("progress.title", user.selected_topic_id),
+            strong_title=app.text("progress.strong", user.selected_topic_id),
+            learning_title=app.text("progress.learning", user.selected_topic_id),
+            recent_title=app.text("progress.recent", user.selected_topic_id),
+        )
+    )

@@ -23,12 +23,16 @@ FREQUENCIES = (
 )
 
 
-def frequency_keyboard(app: Application, prefix: str = "sf") -> InlineKeyboardMarkup:
+def frequency_keyboard(
+    app: Application, prefix: str = "sf", topic_id: str | None = None
+) -> InlineKeyboardMarkup:
     rows = [
-        [InlineKeyboardButton(text=app.content.get(label), callback_data=f"{prefix}:{value}")]
+        [InlineKeyboardButton(text=app.text(label, topic_id), callback_data=f"{prefix}:{value}")]
         for value, label in FREQUENCIES
     ]
-    rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="m:menu")])
+    rows.append(
+        [InlineKeyboardButton(text=app.text("menu.back", topic_id), callback_data="m:menu")]
+    )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -42,20 +46,25 @@ def hour_keyboard(prefix: str = "sh") -> InlineKeyboardMarkup:
     )
 
 
-async def show_settings(message: Message | InaccessibleMessage, app: Application) -> None:
+async def show_settings(
+    message: Message | InaccessibleMessage, app: Application, topic_id: str
+) -> None:
     message = cast(Message, message)
-    await message.answer(app.content.get("settings.title"), reply_markup=frequency_keyboard(app))
+    await message.answer(
+        app.text("settings.title", topic_id),
+        reply_markup=frequency_keyboard(app, topic_id=topic_id),
+    )
 
 
 @router.message(Command("settings"))
-@router.message(F.text == "⚙️ Settings")
+@router.message(F.text.in_({"⚙️ Settings", "⚙️ Напоминания"}))
 async def settings_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if user and user.settings:
-        await show_settings(message, app)
+        await show_settings(message, app, user.selected_topic_id)
     elif user:
-        await message.answer(app.content.get("student_only"))
+        await message.answer(app.text("student_only", user.selected_topic_id))
 
 
 @router.callback_query(F.data == "m:settings")
@@ -65,9 +74,9 @@ async def settings_callback(callback: CallbackQuery, app: Application) -> None:
         async with app.sessions() as session, session.begin():
             user = await callback_actor(session, callback)
         if user and user.settings:
-            await show_settings(callback.message, app)
+            await show_settings(callback.message, app, user.selected_topic_id)
         elif user:
-            await callback.message.answer(app.content.get("student_only"))
+            await callback.message.answer(app.text("student_only", user.selected_topic_id))
 
 
 @router.callback_query(F.data.startswith("sf:"))
@@ -81,16 +90,18 @@ async def set_frequency(callback: CallbackQuery, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await callback_actor(session, callback)
         if not user or not user.settings:
-            await callback.message.answer(app.content.get("student_only"))
+            topic_id = user.selected_topic_id if user else None
+            await callback.message.answer(app.text("student_only", topic_id))
             return
+        topic_id = user.selected_topic_id
         user.settings.days_mask = value
         user.settings.reminders_enabled = value != "OFF"
         user.settings.updated_by_user_id = user.id
     if value == "OFF":
-        await callback.message.answer(app.content.get("settings.saved"))
+        await callback.message.answer(app.text("settings.saved", topic_id))
     else:
         await callback.message.answer(
-            app.content.get("settings.hour"), reply_markup=hour_keyboard()
+            app.text("settings.hour", topic_id), reply_markup=hour_keyboard()
         )
 
 
@@ -105,8 +116,10 @@ async def set_hour(callback: CallbackQuery, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await callback_actor(session, callback)
         if not user or not user.settings:
-            await callback.message.answer(app.content.get("student_only"))
+            topic_id = user.selected_topic_id if user else None
+            await callback.message.answer(app.text("student_only", topic_id))
             return
+        topic_id = user.selected_topic_id
         user.settings.local_hour = hour
         user.settings.updated_by_user_id = user.id
-    await callback.message.answer(app.content.get("settings.saved"))
+    await callback.message.answer(app.text("settings.saved", topic_id))

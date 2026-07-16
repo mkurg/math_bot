@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime
+from html import escape
 from zoneinfo import ZoneInfo
 
 from aiogram import Bot
@@ -13,7 +14,7 @@ from sqlalchemy.orm import selectinload
 
 from app.bot import Application
 from app.database.models import DailyDelivery, Question, User
-from app.keyboards.questions import answer_keyboard
+from app.keyboards.questions import answer_choices_text, answer_keyboard
 from app.services.daily import prepare_daily_question
 from app.services.reminders import day_matches
 
@@ -91,9 +92,12 @@ async def deliver_due(bot: Bot, app: Application, now: datetime | None = None) -
 
 
 async def _send(bot: Bot, app: Application, chat_id: int, question: Question) -> None:
-    prompt = (
-        f"{app.content.get('daily.title')}\n\n<b>{question.prompt_payload['rendered_prompt']}</b>"
-    )
+    prompt = escape(str(question.prompt_payload["rendered_prompt"]))
+    options = answer_choices_text(question)
+    if options:
+        prompt = f"{prompt}\n\n{options}"
+    prompt = f"{app.text('daily.title', question.topic_id)}\n\n{prompt}"
+    keyboard = answer_keyboard(question, content=lambda key: app.text(key, question.topic_id))
     media = question.media_payload
     if media:
         data = app.registry.get(question.topic_id).render_media(
@@ -103,10 +107,10 @@ async def _send(bot: Bot, app: Application, chat_id: int, question: Question) ->
             chat_id,
             BufferedInputFile(data, filename=f"{question.public_id}.png"),
             caption=prompt,
-            reply_markup=answer_keyboard(question),
+            reply_markup=keyboard,
         )
     else:
-        await bot.send_message(chat_id, prompt, reply_markup=answer_keyboard(question))
+        await bot.send_message(chat_id, prompt, reply_markup=keyboard)
 
 
 async def _mark_sent(app: Application, delivery_id: int) -> None:

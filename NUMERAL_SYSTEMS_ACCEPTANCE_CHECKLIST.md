@@ -1,6 +1,6 @@
 # Numeral systems acceptance checklist
 
-Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9: `298 passed`, no skips, 85.41% overall coverage, Ruff clean, formatting clean, and strict mypy clean.
+Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9: `304 passed`, no skips, 85.17% overall coverage, Ruff clean, formatting clean, and strict mypy clean.
 
 ## Assignment and isolation
 
@@ -22,9 +22,10 @@ Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9
 
 ## Practice, questions, and interaction
 
-- [x] All ten practice modes and all eight specified challenges exist with their required lengths and compositions.
+- [x] The ten original practice modes and all eight specified challenges remain; an eleventh guided mode creates a three-tier progression without reducing the full-curriculum tier.
 - [x] All required conceptual, conversion, comparison, missing-digit, error, method, bit/byte, RGB, character, interpretation, and transformation question families are generated and tested.
-- [x] Multiple choice and binary/octal/decimal/hexadecimal numeral pads require no Telegram keyboard typing.
+- [x] Multiple choice and binary/octal/decimal/hexadecimal numeral pads require no Telegram keyboard typing; long options are printed in full and selected with compact A/B/C/D buttons.
+- [x] Tier 1 contains foundational recognition with no decimal-conversion drills; Tier 2 uses single 3-bit/4-bit groups and no decimal conversions; Tier 3 preserves the original full difficulty.
 - [x] Constructed answers show the current value and provide digit, backspace, clear, and submit controls.
 - [x] Ownership, expiry, validation, and first-submission-only behavior use the generic answer service.
 - [x] Three-level progressive hints are bounded, separately recorded, and do not count as failure.
@@ -35,7 +36,7 @@ Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9
 - [x] Forty-eight stable skills cover foundation, conversions, cross-base reasoning, data units, RGB, characters, and interpretation.
 - [x] Prerequisites affect selection priority while occasional exploratory applications remain available.
 - [x] Mastery requires correct work across multiple days and at least two question formats.
-- [x] Daily questions rotate among concept, conversion, application, and interpretation.
+- [x] Daily questions rotate among concept, guided bit-group conversion, application, and interpretation without hard decimal-conversion drills.
 - [x] Student progress shows topic-specific metrics, conceptual groups, strengths, current targets, stage, and recent challenges.
 - [x] Teacher detail shows module, reminder, challenge history, hint use, daily activity, misconceptions, and procedural/conceptual pattern.
 - [x] No speed penalty, public leaderboard, runtime AI content, or excluded advanced topic is included.

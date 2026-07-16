@@ -17,7 +17,7 @@ from app.core.questions.callbacks import (
 )
 from app.core.topics.contracts import MasteryState
 from app.database.models import Question
-from app.keyboards.questions import answer_keyboard
+from app.keyboards.questions import answer_choices_text, answer_keyboard
 from app.topics.numeral_systems import NumeralSystemsModule
 from app.topics.numeral_systems.question_generator import (
     BASE_SUFFIXES,
@@ -33,7 +33,7 @@ def test_module_contract_curriculum_and_validation() -> None:
     assert module.metadata.topic_id == "numeral_systems"
     assert len(module.skills()) == 48
     assert len({item.skill_key for item in module.skills()}) == 48
-    assert len(module.practice_modes()) == 10
+    assert len(module.practice_modes()) == 11
     assert len(module.test_definitions()) == 8
     assert len(module.learning_units()) == 11
     assert module.validate() == []
@@ -74,6 +74,27 @@ def test_all_direct_conversion_directions_are_correct(
         )
         assert BASE_SUFFIXES[source] in question.rendered_prompt
         assert question.metadata["target_base"] == target
+        assert module.evaluate_answer(asdict(question), question.correct_answer).is_correct
+
+
+@pytest.mark.parametrize(
+    "skill_key",
+    (
+        "octal:bin_to_oct",
+        "octal:oct_to_bin",
+        "hexadecimal:bin_to_hex",
+        "hexadecimal:hex_to_bin",
+    ),
+)
+def test_guided_conversions_use_one_small_group_without_decimal(skill_key: str) -> None:
+    module = NumeralSystemsModule()
+    source, target = CONVERSIONS[skill_key]
+    assert 10 not in {source, target}
+    for seed in range(20):
+        question = module.generate_question(skill_key, "guided_conversion", Random(seed))
+        assert question.answer_mode == "single_choice"
+        answer = str(question.correct_answer["value"])
+        assert len(answer) <= (4 if target == 2 else 1)
         assert module.evaluate_answer(asdict(question), question.correct_answer).is_correct
 
 
@@ -182,13 +203,28 @@ def test_practice_blueprints_are_varied_and_mode_specific() -> None:
             )
             <= 5
         )
-    quick = module.session_blueprint("quick", 5, {}, {}, Random(1))
-    quick_groups = {
-        next(item.group_key for item in module.skills() if item.skill_key == key)
-        for key, _ in quick
+    tier_one = module.session_blueprint("quick", 5, {}, {}, Random(1))
+    tier_two = module.session_blueprint("guided", 6, {}, {}, Random(1))
+    assert all(
+        key not in CONVERSIONS or 10 not in CONVERSIONS[key]
+        for key, _question_type in (*tier_one, *tier_two)
+    )
+    assert all(question_type != "direct_conversion" for _, question_type in tier_one)
+    assert any(question_type == "guided_conversion" for _, question_type in tier_two)
+    deep = module.session_blueprint("deep", 8, {}, {}, Random(1))
+    deep_groups = {
+        next(item.group_key for item in module.skills() if item.skill_key == key) for key, _ in deep
     }
-    assert quick_groups & {"rgb", "characters"}
-    assert quick_groups & {"foundation", "binary_decimal"}
+    assert deep_groups == {
+        "foundation",
+        "metaconcept",
+        "binary_decimal",
+        "octal",
+        "hexadecimal",
+        "cross_base",
+        "rgb",
+        "characters",
+    }
     focused = module.session_blueprint(
         "quick", 5, {}, {"focus_skill": "rgb:complete_code"}, Random(2)
     )
@@ -253,8 +289,9 @@ def test_daily_rotation_progress_teacher_insights_and_test_metrics() -> None:
         module.daily_skill({}, start + timedelta(days=offset), Random(offset))[1]
         for offset in range(8)
     }
-    assert daily & {"direct_conversion", "cross_conversion"}
-    assert daily & {"bit_count", "byte_range"}
+    assert "guided_conversion" in daily
+    assert not daily & {"direct_conversion", "cross_conversion"}
+    assert daily & {"bit_count_easy", "byte_range"}
     assert daily & {"interpretation", "same_bits_different_meanings"}
 
     state = MasteryState(
@@ -338,3 +375,20 @@ def test_constructed_answer_keyboards_callbacks_and_hint(
             parse_pad_callback(invalid)
     with pytest.raises(ValueError):
         parse_hint_callback("h:bad")
+
+
+def test_long_choice_answers_are_fully_shown_in_text_with_compact_buttons() -> None:
+    question = _question_model("single_choice")
+    long_answer = "3 bits make 2^3 = 8 patterns, matching all eight octal digits."
+    question.options = [
+        {"label": long_answer, "value": {"value": "correct"}},
+        {"label": "Because computers store octal.", "value": {"value": "wrong-1"}},
+        {"label": "Because 3 is the largest digit.", "value": {"value": "wrong-2"}},
+        {"label": "Because decimal says so.", "value": {"value": "wrong-3"}},
+    ]
+    keyboard = answer_keyboard(question)
+    labels = [button.text for row in keyboard.inline_keyboard[:-1] for button in row]
+    assert labels == ["A", "B", "C", "D"]
+    rendered = answer_choices_text(question)
+    assert long_answer in rendered
+    assert "<b>A</b>" in rendered and "<b>D</b>" in rendered

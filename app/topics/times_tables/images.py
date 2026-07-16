@@ -71,7 +71,13 @@ def render_individual_table(payload: dict[str, Any]) -> bytes:
     table = int(payload["table"])
     image = Image.new("RGB", (720, 860), BACKGROUND)
     draw = ImageDraw.Draw(image)
-    draw.text((360, 60), f"Table of {table}", fill=INK, font=_font(42, bold=True), anchor="mm")
+    draw.text(
+        (360, 60),
+        f"Таблица на {table}",
+        fill=INK,
+        font=_font(42, bold=True),
+        anchor="mm",
+    )
     for index in range(1, 11):
         y = 125 + index * 65
         fill = "#FFFFFF" if index % 2 else "#EDF3FF"

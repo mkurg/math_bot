@@ -11,14 +11,14 @@ from app.services.sessions import next_question, start_session
 router = Router(name="daily")
 
 
-@router.message(F.text == "☀️ Daily task")
+@router.message(F.text.in_({"☀️ Daily task", "☀️ Задание дня"}))
 async def daily_task(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
         if not user:
             return
         if user.role != "student" or not user.settings:
-            await message.answer(app.content.get("student_only"))
+            await message.answer(app.text("student_only", user.selected_topic_id))
             return
         delivery, question = await prepare_daily_question(
             session, app.registry, user, datetime.now(UTC)
@@ -30,7 +30,7 @@ async def daily_task(message: Message, app: Application) -> None:
     if should_send and question:
         await send_question(message.bot, message, app, question, None, daily=True)
     else:
-        await message.answer(app.content.get("daily.already"))
+        await message.answer(app.text("daily.already", user.selected_topic_id))
 
 
 @router.callback_query(F.data == "daily:more")
@@ -43,7 +43,7 @@ async def one_more(callback: CallbackQuery, app: Application) -> None:
         if not user:
             return
         if user.role != "student" or not user.settings:
-            await callback.message.answer(app.content.get("student_only"))
+            await callback.message.answer(app.text("student_only", user.selected_topic_id))
             return
         practice_session = await start_session(
             session,

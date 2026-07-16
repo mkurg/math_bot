@@ -95,6 +95,28 @@ MODE_GROUPS: dict[str, tuple[str, ...]] = {
     "characters": ("characters", "metaconcept"),
 }
 
+TIER_ONE_BLUEPRINT: tuple[tuple[str, str], ...] = (
+    ("foundation:valid_digits", "base_identification"),
+    ("foundation:meaning_ten", "meaning_ten"),
+    ("octal:three_bit_mapping", "explanation_selection"),
+    ("hexadecimal:four_bit_mapping", "explanation_selection"),
+    ("data_units:nibble", "byte_decomposition"),
+    ("data_units:byte", "bit_count_easy"),
+    ("data_units:byte_range", "byte_range"),
+    ("metaconcept:hex_compact", "explanation_selection"),
+)
+
+TIER_TWO_BLUEPRINT: tuple[tuple[str, str], ...] = (
+    ("octal:three_bit_mapping", "explanation_selection"),
+    ("hexadecimal:four_bit_mapping", "explanation_selection"),
+    ("octal:bin_to_oct", "guided_conversion"),
+    ("octal:oct_to_bin", "guided_conversion"),
+    ("hexadecimal:bin_to_hex", "guided_conversion"),
+    ("hexadecimal:hex_to_bin", "guided_conversion"),
+    ("data_units:nibble", "byte_decomposition"),
+    ("metaconcept:hex_compact", "explanation_selection"),
+)
+
 
 class NumeralSystemsModule:
     metadata = TopicMetadata(
@@ -118,6 +140,7 @@ class NumeralSystemsModule:
     def practice_modes(self) -> tuple[PracticeModeDefinition, ...]:
         return (
             PracticeModeDefinition("quick", "mode.quick", "mode.quick.description", 5),
+            PracticeModeDefinition("guided", "mode.guided", "mode.guided.description", 6),
             PracticeModeDefinition("deep", "mode.deep", "mode.deep.description", 8),
             PracticeModeDefinition(
                 "binary_decimal", "mode.binary_decimal", "mode.binary_decimal.description", 8
@@ -278,7 +301,7 @@ class NumeralSystemsModule:
     def _eligible(
         self, mode_id: str, mastery: dict[str, MasteryState]
     ) -> tuple[SkillDefinition, ...]:
-        if mode_id in {"quick", "deep"}:
+        if mode_id in {"quick", "guided", "deep"}:
             return self._skills
         if mode_id == "weak":
             attempted = tuple(
@@ -385,6 +408,10 @@ class NumeralSystemsModule:
         configuration: dict[str, Any],
         rng: Random,
     ) -> tuple[tuple[str, str], ...]:
+        if not configuration.get("focus_skill") and mode_id in {"quick", "guided"}:
+            source = list(TIER_ONE_BLUEPRINT if mode_id == "quick" else TIER_TWO_BLUEPRINT)
+            rng.shuffle(source)
+            return tuple(source[index % len(source)] for index in range(question_count))
         selected = self._select_skills(mode_id, question_count, mastery, configuration, rng)
         blueprint: list[tuple[str, str]] = []
         previous_type = ""
@@ -567,6 +594,10 @@ class NumeralSystemsModule:
         )
 
     def retry_question_type(self, skill_key: str, question_type: str, rng: Random) -> str:
+        if question_type == "guided_conversion":
+            return "guided_conversion_pad"
+        if question_type == "guided_conversion_pad":
+            return "guided_conversion"
         try:
             choices = QUESTION_TYPES[skill_key]
         except KeyError as exc:
@@ -677,16 +708,16 @@ class NumeralSystemsModule:
                 "cross_base:equivalent": "equivalent_representation",
             },
             {
-                "binary_decimal:bin_to_dec": "direct_conversion",
-                "octal:bin_to_oct": "direct_conversion",
-                "hexadecimal:bin_to_hex": "direct_conversion",
-                "cross_base:oct_to_hex": "cross_conversion",
+                "octal:bin_to_oct": "guided_conversion",
+                "octal:oct_to_bin": "guided_conversion",
+                "hexadecimal:bin_to_hex": "guided_conversion",
+                "hexadecimal:hex_to_bin": "guided_conversion",
             },
             {
-                "data_units:patterns": "bit_count",
+                "data_units:patterns": "bit_count_easy",
                 "data_units:byte_range": "byte_range",
+                "data_units:nibble": "byte_decomposition",
                 "rgb:visual": "colour_recognition",
-                "rgb:complete_code": "rgb_channel",
             },
             {
                 "characters:numeric_vs_char": "interpretation",
@@ -705,14 +736,16 @@ class NumeralSystemsModule:
 
     def validate(self) -> list[str]:
         errors = validate_topic_contract(self)
-        if len(self.practice_modes()) != 10:
-            errors.append("all ten numeral-systems practice modes are required")
+        if len(self.practice_modes()) != 11:
+            errors.append("all eleven numeral-systems practice modes are required")
         if len(self.test_definitions()) != 8:
             errors.append("all eight numeral-systems challenges are required")
         required_types = {
             "positional_expansion": "foundation:positional_value",
             "base_identification": "foundation:valid_digits",
             "direct_conversion": "binary_decimal:bin_to_dec",
+            "guided_conversion": "octal:bin_to_oct",
+            "guided_conversion_pad": "hexadecimal:hex_to_bin",
             "cross_conversion": "cross_base:oct_to_hex",
             "equivalent_representation": "cross_base:equivalent",
             "comparison": "cross_base:compare",
@@ -721,6 +754,7 @@ class NumeralSystemsModule:
             "method_selection": "cross_base:efficient_route",
             "explanation_selection": "hexadecimal:four_bit_mapping",
             "bit_count": "data_units:patterns",
+            "bit_count_easy": "data_units:bit",
             "byte_range": "data_units:byte_range",
             "byte_decomposition": "data_units:nibble",
             "rgb_channel": "rgb:complete_code",
