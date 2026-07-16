@@ -87,5 +87,5 @@ Evidence recorded on 2026-07-16 with Python 3.14.5, PostgreSQL 17.9, and Docker.
 - [x] Core/services/topic-domain coverage meets or exceeds 85%; overall exceeds 75%.
 - [x] Topic and content validators pass.
 - [x] Dependency lock, Dockerfile, Compose, persistent database volume, migration, environment example, README, backup/restore, and topic guide exist.
-- [ ] Production Docker image and live polling deployment verified on Hetzner. Pending the configured teacher Telegram ID.
-- [ ] Final manual Telegram acceptance flow completed. Pending the configured teacher account.
+- [x] Production Python 3.14.5 Docker image and live polling deployment verified on Hetzner; PostgreSQL is healthy, migration `20260716_0001` is applied, and the bot is running with zero restarts.
+- [ ] Final manual Telegram acceptance flow completed. Requires one invited student Telegram account to exercise the live student journey.
