@@ -1,0 +1,23 @@
+from pathlib import Path
+
+from app.content.loader import ContentCatalog
+from app.topics.times_tables import TimesTablesModule
+
+
+def main() -> None:
+    root = Path(__file__).parents[1]
+    ContentCatalog(root / "app" / "content" / "core" / "strings.yaml")
+    module = TimesTablesModule()
+    errors = module.validate()
+    searchable = "\n".join(
+        path.read_text(encoding="utf-8") for path in (root / "app").rglob("*.yaml")
+    ).lower()
+    forbidden = ("text-to-speech", "voice message", "microphone")
+    errors.extend(f"forbidden audio content: {term}" for term in forbidden if term in searchable)
+    if errors:
+        raise SystemExit("Content validation failed: " + "; ".join(errors))
+    print("Content validation passed: core and times_tables")
+
+
+if __name__ == "__main__":
+    main()

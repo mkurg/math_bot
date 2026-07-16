@@ -1,0 +1,1 @@
+"""Topic-independent application core."""
