@@ -581,7 +581,10 @@ class NumeralSystemsModule:
         if not metadata.get("fixed_width") and metadata.get("target_base"):
             actual = actual.lstrip("0") or "0"
             expected = expected.lstrip("0") or "0"
-        is_correct = actual == expected
+        legacy_equivalent_sum = (
+            question_payload.get("question_type") == "positional_expansion" and actual == "REVERSED"
+        )
+        is_correct = actual == expected or legacy_equivalent_sum
         explanation = question_payload["explanation_payload"]
         return EvaluationResult(
             is_correct=is_correct,

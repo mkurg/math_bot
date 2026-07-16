@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 from random import Random
 
 import pytest
+from PIL import Image
 
 from app.core.mastery.engine import is_mastered
 from app.core.questions.answer_modes import validate_options
@@ -154,6 +156,33 @@ def test_every_question_family_is_serializable_and_evaluable(
         assert evaluation.feedback_payload["misconception"]
 
 
+def test_positional_expansion_has_one_unambiguous_arithmetic_answer() -> None:
+    module = NumeralSystemsModule()
+    for seed in range(200):
+        question = module.generate_question(
+            "foundation:positional_value", "positional_expansion", Random(seed)
+        )
+        totals = [
+            sum(int(term.strip()) for term in option.label.split("+"))
+            for option in question.answer_options
+        ]
+        correct_index = next(
+            index
+            for index, option in enumerate(question.answer_options)
+            if option.value == question.correct_answer
+        )
+        assert len(set(option.label for option in question.answer_options)) == 4
+        assert totals.count(totals[correct_index]) == 1
+        assert (
+            "rightmost digit is the units place" in question.explanation_payload["equation"].lower()
+        )
+
+    legacy_payload = asdict(
+        module.generate_question("foundation:positional_value", "positional_expansion", Random(1))
+    )
+    assert module.evaluate_answer(legacy_payload, {"value": "reversed"}).is_correct
+
+
 def test_character_zero_case_and_ascii_width_are_explicit() -> None:
     module = NumeralSystemsModule()
     prompts = []
@@ -280,6 +309,18 @@ def test_learning_units_and_deterministic_media() -> None:
         module.render_media("rgb_swatch", {"hex": "GG0000"})
     with pytest.raises(ValueError):
         module.render_media("rgb_channels", {"red": 256, "green": 0, "blue": 0})
+
+    for renderer_id, payload in (
+        ("place_values", {"digits": "34", "base": 16}),
+        ("grouping", {"bits": "1011011", "size": 3}),
+        ("byte", {"bits": "11001010"}),
+        ("rgb_swatch", {"hex": "8040FF"}),
+        ("rgb_channels", {"red": 128, "green": 64, "blue": 255}),
+        ("ascii_card", {"bits": "01000001", "character": "A"}),
+    ):
+        with Image.open(BytesIO(module.render_media(renderer_id, payload))) as image:
+            assert image.width >= (900 if renderer_id == "rgb_swatch" else 1080)
+            assert image.height >= 600
 
 
 def test_daily_rotation_progress_teacher_insights_and_test_metrics() -> None:

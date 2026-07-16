@@ -279,18 +279,34 @@ def _guided_conversion(
 
 def _positional_expansion(skill_key: str, question_type: str, rng: Random) -> GeneratedQuestion:
     base = rng.choice((2, 8, 16))
-    value = rng.randint(base + 1, min(255, base * base - 1))
+    candidates = [
+        item
+        for item in range(base + 1, min(255, base * base - 1) + 1)
+        if "0" not in digits(item, base)
+    ]
+    value = rng.choice(candidates)
     representation = digits(value, base)
+    powers = tuple(range(len(representation) - 1, -1, -1))
     terms = [
         int(character, base) * base**power
-        for power, character in enumerate(reversed(representation))
+        for character, power in zip(representation, powers, strict=True)
     ]
     correct_label = " + ".join(str(term) for term in terms)
+    highest_place_terms = [int(character, base) * base ** powers[0] for character in representation]
+    shifted_terms = [
+        int(character, base) * base ** (power + 1)
+        for character, power in zip(representation, powers, strict=True)
+    ]
     distractors = [
         (" + ".join(str(int(character, base)) for character in representation), "digits-only"),
-        (" + ".join(str(term + base) for term in terms), "shifted"),
-        (" + ".join(str(term) for term in reversed(terms)), "reversed"),
+        (" + ".join(str(term) for term in highest_place_terms), "same-place-value"),
+        (" + ".join(str(term) for term in shifted_terms), "shifted-place-values"),
     ]
+    rightmost = int(representation[-1], base)
+    left_steps = " then ".join(
+        f"{character} × {base}^{power} = {term}"
+        for character, power, term in zip(representation[:-1], powers[:-1], terms[:-1], strict=True)
+    )
     return _choice(
         skill_key,
         question_type,
@@ -298,12 +314,13 @@ def _positional_expansion(skill_key: str, question_type: str, rng: Random) -> Ge
         correct_label,
         "correct",
         distractors,
-        f"In base {base}, positions from the right are {base}⁰, {base}¹, and so on. "
-        f"The value is {correct_label} = {value}.",
+        f"The rightmost digit is the units place: {representation[-1]} × {base}^0 = "
+        f"{rightmost}. Moving left multiplies the place value by {base}: {left_steps}. "
+        f"In the same left-to-right order as the numeral, {correct_label} = {value}.",
         (
-            "Start at the right with the units place.",
-            f"Each step left multiplies the place value by {base}.",
-            correct_label,
+            f"The rightmost digit {representation[-1]} is in the units ({base}^0) place.",
+            f"Move left one place: its value is multiplied by {base}.",
+            f"Write the terms in the numeral's order: {correct_label}.",
         ),
         "confuses positional place values",
         rng,

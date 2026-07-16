@@ -1,6 +1,6 @@
 # Numeral systems acceptance checklist
 
-Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9: `304 passed`, no skips, 85.17% overall coverage, Ruff clean, formatting clean, and strict mypy clean.
+Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9: `305 passed`, no skips, 85.34% overall coverage, Ruff clean, formatting clean, and strict mypy clean.
 
 ## Assignment and isolation
 
@@ -30,6 +30,8 @@ Automated evidence recorded on 2026-07-16 with Python 3.14.5 and PostgreSQL 17.9
 - [x] Ownership, expiry, validation, and first-submission-only behavior use the generic answer service.
 - [x] Three-level progressive hints are bounded, separately recorded, and do not count as failure.
 - [x] Incorrect answers receive a worked explanation and return later in a different format.
+- [x] Place-value choices have exactly one arithmetic result; mathematically equivalent reordered sums are never graded differently, and legacy pending questions accept the formerly duplicated equivalent option.
+- [x] All numeral-system diagrams use large phone-readable layouts; place-value, grouping, byte, RGB, and interpretation visuals expose their structure explicitly.
 
 ## Adaptation, progress, and teacher view
 
