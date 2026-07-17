@@ -25,10 +25,11 @@ from app.services.daily import prepare_daily_question
 from app.services.invitations import InvitationService
 from app.services.privacy import delete_student_data
 from app.services.sessions import independent_question, next_question, start_session
-from app.services.statistics import progress_for_user, topic_group_metrics
+from app.services.statistics import progress_for_user, topic_group_metrics, user_metrics
 from app.services.users import create_student, ensure_initial_records
 from app.topics.numeral_systems import NumeralSystemsModule
 from app.topics.times_tables import TimesTablesModule
+from app.topics.times_tables.skills import parse_skill_key
 from app.workers.daily_questions import deliver_due
 from tests.sample_topic import SampleTopic
 
@@ -127,6 +128,101 @@ async def test_five_question_session_mastery_and_idempotency(
     async with db_sessions() as session:
         assert await session.scalar(select(func.count(Attempt.id))) == 5
         assert (await session.scalar(select(func.count(SkillMastery.id))) or 0) >= 1
+
+
+@pytest.mark.parametrize(
+    ("mode_id", "question_prefix"),
+    [("movement", "movement_"), ("rectangle", "rectangle_")],
+)
+@pytest.mark.asyncio
+async def test_formula_problem_answers_update_pair_mastery_and_all_statistics(
+    db_sessions: async_sessionmaker[AsyncSession],
+    mode_id: str,
+    question_prefix: str,
+) -> None:
+    user = await seed_student(db_sessions)
+    module_registry = registry()
+    async with db_sessions() as session, session.begin():
+        stored = await session.get(User, user.id)
+        assert stored
+        practice = await start_session(session, module_registry, stored, mode_id, "practice")
+        answered: list[tuple[str, str, bool]] = []
+        for position in range(1, 7):
+            question = await next_question(session, module_registry, practice)
+            assert question and question.question_type.startswith(question_prefix)
+            operation, low, high = parse_skill_key(question.skill_key)
+            metadata = question.prompt_payload["metadata"]
+            factors = (
+                (int(metadata["speed"]), int(metadata["time"]))
+                if mode_id == "movement"
+                else (int(metadata["length"]), int(metadata["width"]))
+            )
+            assert (low, high) == tuple(sorted(factors))
+            expected_operation = (
+                "mul"
+                if question.question_type in {"movement_distance", "rectangle_area"}
+                else "div"
+            )
+            assert operation == expected_operation
+            answer_index = next(
+                index
+                for index, option in enumerate(question.options)
+                if (option["value"] == question.correct_answer) is (position < 6)
+            )
+            outcome = await submit_answer(
+                session,
+                module_registry,
+                stored,
+                question.public_id,
+                answer_index,
+            )
+            assert outcome.evaluation.is_correct is (position < 6)
+            answered.append(
+                (question.skill_key, question.question_type, outcome.evaluation.is_correct)
+            )
+
+        assert practice.status == "completed"
+        assert practice.answered_count == 6
+        assert practice.correct_count == 5
+        attempts = (
+            await session.scalars(select(Attempt).where(Attempt.user_id == stored.id))
+        ).all()
+        assert len(attempts) == 6
+        assert {(item.skill_key, item.source, item.is_correct) for item in attempts} == {
+            (skill_key, "practice", is_correct) for skill_key, _, is_correct in answered
+        }
+        mastery_rows = (
+            await session.scalars(
+                select(SkillMastery).where(
+                    SkillMastery.user_id == stored.id,
+                    SkillMastery.topic_id == "times_tables",
+                )
+            )
+        ).all()
+        mastery_by_skill = {item.skill_key: item for item in mastery_rows}
+        assert set(mastery_by_skill) == {skill_key for skill_key, _, _ in answered}
+        for skill_key, question_type, is_correct in answered:
+            row = mastery_by_skill[skill_key]
+            assert row.attempt_count == 1
+            assert row.correct_count == int(is_correct)
+            assert row.box == int(is_correct)
+            assert (question_type in row.topic_state.get("correct_formats", [])) is is_correct
+
+        metrics = await user_metrics(session, stored.id, "times_tables")
+        assert metrics["total"] == 6
+        assert metrics["recent"] == 6
+        assert metrics["accuracy"] == 83
+        view = await progress_for_user(session, module_registry, stored)
+        headline = {item.label: item.value for item in view.headline_metrics}
+        assert headline["Всего вопросов"] == "6"
+        assert headline["За последние 7 дней"] == "6"
+        assert headline["Точность за 7 дней"] == "83%"
+        operation_progress = {item.label: item.percentage for item in view.progress_groups[:2]}
+        assert operation_progress["Деление"] > 0
+        table_progress = view.progress_groups[2]
+        assert any(item.value != "0%" for item in table_progress.items)
+        topic_breakdown = await topic_group_metrics(session)
+        assert topic_breakdown == [("times_tables", 1, 6, 83)]
 
 
 @pytest.mark.asyncio

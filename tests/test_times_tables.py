@@ -194,7 +194,11 @@ def test_practice_modes_and_division_prerequisite() -> None:
     assert any(kind.startswith("movement_") for kind in mixed_types)
     assert any(kind.startswith("rectangle_") for kind in mixed_types)
     table = module.session_blueprint("table", 10, {}, {"table": 7}, Random(3))
-    assert sum(7 in parse_skill_key(key)[1:] for key, _ in table) >= 7
+    assert len({key for key, _ in table}) == 10
+    assert all(7 in parse_skill_key(key)[1:] for key, _ in table)
+    assert {parse_skill_key(key)[1:] for key, _ in table} == {
+        tuple(sorted((7, factor))) for factor in range(1, 11)
+    }
     multiplication = module.session_blueprint("multiplication", 10, {}, {}, Random(4))
     assert {kind for _, kind in multiplication} <= {
         "direct_multiplication",
@@ -235,6 +239,29 @@ def test_explicit_formula_sections_balance_all_directions(
         assert operation == expected_operation
         question = module.generate_question(skill_key, question_type, Random(9))
         assert question.question_type == question_type
+
+
+@pytest.mark.parametrize("table_number", range(1, 11))
+def test_chosen_table_never_injects_unrelated_factor_pairs(table_number: int) -> None:
+    module = TimesTablesModule()
+    unrelated_mastery = {
+        "mul:2:3": MasteryState(
+            "mul:2:3",
+            box=0,
+            attempt_count=5,
+            correct_count=1,
+        )
+    }
+    for seed in range(50):
+        blueprint = module.session_blueprint(
+            "table",
+            10,
+            unrelated_mastery,
+            {"table": table_number},
+            Random(seed),
+        )
+        assert len({skill_key for skill_key, _ in blueprint}) == 10
+        assert all(table_number in parse_skill_key(skill_key)[1:] for skill_key, _ in blueprint)
 
 
 def test_formula_problem_retries_stay_in_the_selected_section() -> None:

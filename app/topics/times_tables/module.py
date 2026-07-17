@@ -35,7 +35,7 @@ CONTENT_PATH = Path(__file__).with_name("content") / "strings.yaml"
 class TimesTablesModule:
     metadata = TopicMetadata(
         topic_id="times_tables",
-        version="1.3.0",
+        version="1.3.1",
         title_key="topic.title",
         short_title_key="topic.short_title",
         description_key="topic.description",
@@ -165,32 +165,7 @@ class TimesTablesModule:
             return self._formula_session_blueprint(mode_id, question_count, mastery, now, rng)
         eligible = self._eligible(mode_id, mastery, configuration)
         chosen: list[str]
-        if mode_id == "table":
-            table_keys = list(eligible)
-            rng.shuffle(table_keys)
-            table_count = max(1, round(question_count * 0.7))
-            weak_count = round(question_count * 0.2)
-            chosen = table_keys[:table_count]
-            all_multiplication = tuple(
-                skill.skill_key
-                for skill in self._skills
-                if skill.skill_key.startswith("mul:") and skill.skill_key not in chosen
-            )
-            weak_order = weighted_skill_order(all_multiplication, mastery, now, rng)
-            for key in weak_order:
-                if key not in chosen:
-                    chosen.append(key)
-                if len(chosen) == table_count + weak_count:
-                    break
-            confidence = [
-                key
-                for key in all_multiplication
-                if 1 in parse_skill_key(key)[1:] and key not in chosen
-            ]
-            rng.shuffle(confidence)
-            chosen.extend(confidence[: question_count - len(chosen)])
-            rng.shuffle(chosen)
-        elif mode_id == "weak" and self._weak_factor_pairs(mastery):
+        if mode_id == "weak" and self._weak_factor_pairs(mastery):
             ordered = list(eligible)
             rng.shuffle(ordered)
             ordered.sort(key=lambda key: self._weak_pair_rank(key, mastery), reverse=True)
