@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from dataclasses import asdict
 from datetime import UTC, datetime
 from random import Random
@@ -177,6 +178,8 @@ def test_practice_modes_and_division_prerequisite() -> None:
         "quick",
         "normal",
         "weak",
+        "movement",
+        "rectangle",
         "table",
         "multiplication",
         "division",
@@ -199,6 +202,49 @@ def test_practice_modes_and_division_prerequisite() -> None:
     }
     division = module.session_blueprint("division", 10, {}, {}, Random(5))
     assert {kind for _, kind in division} <= {"direct_division", "missing_divisor"}
+
+
+@pytest.mark.parametrize(
+    ("mode_id", "expected_types"),
+    [
+        (
+            "movement",
+            {"movement_distance", "movement_speed", "movement_time"},
+        ),
+        (
+            "rectangle",
+            {"rectangle_area", "rectangle_length", "rectangle_width"},
+        ),
+    ],
+)
+def test_explicit_formula_sections_balance_all_directions(
+    mode_id: str, expected_types: set[str]
+) -> None:
+    module = TimesTablesModule()
+    blueprint = module.session_blueprint(mode_id, 6, {}, {}, Random(8))
+    assert len(blueprint) == 6
+    assert Counter(kind for _, kind in blueprint) == Counter(
+        {question_type: 2 for question_type in expected_types}
+    )
+    assert len({parse_skill_key(key)[1:] for key, _ in blueprint}) == 6
+    for skill_key, question_type in blueprint:
+        operation, _, _ = parse_skill_key(skill_key)
+        expected_operation = (
+            "mul" if question_type in {"movement_distance", "rectangle_area"} else "div"
+        )
+        assert operation == expected_operation
+        question = module.generate_question(skill_key, question_type, Random(9))
+        assert question.question_type == question_type
+
+
+def test_formula_problem_retries_stay_in_the_selected_section() -> None:
+    module = TimesTablesModule()
+    assert (
+        module.retry_question_type("mul:6:7", "movement_distance", Random(1)) == "movement_distance"
+    )
+    assert module.retry_question_type("div:6:7", "movement_speed", Random(1)) == "movement_time"
+    assert module.retry_question_type("mul:6:7", "rectangle_area", Random(1)) == "rectangle_area"
+    assert module.retry_question_type("div:6:7", "rectangle_length", Random(1)) == "rectangle_width"
 
 
 def test_weak_pairs_mode_uses_unresolved_mistakes_from_both_operations() -> None:

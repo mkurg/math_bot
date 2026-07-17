@@ -103,6 +103,16 @@ async def test_student_menu_practice_question_and_daily_handlers(
     ]
     assert any("Выбери занятие" in text for text in rendered_messages)
     assert any("Мой прогресс" in text for text in rendered_messages)
+    practice_call = next(
+        call
+        for call in cast(AsyncMock, message.answer).await_args_list
+        if call.args and call.args[0] == "Выбери режим тренировки:"
+    )
+    practice_markup = practice_call.kwargs["reply_markup"]
+    assert isinstance(practice_markup, InlineKeyboardMarkup)
+    practice_labels = [row[0].text for row in practice_markup.inline_keyboard]
+    assert "🚗 Задачи на движение — 6 вопросов" in practice_labels
+    assert "📐 Площадь прямоугольника — 6 вопросов" in practice_labels
     assert any(
         isinstance(call.kwargs.get("reply_markup"), InlineKeyboardMarkup)
         and call.kwargs["reply_markup"].inline_keyboard[0][0].callback_data == "pm:weak"
@@ -112,6 +122,32 @@ async def test_student_menu_practice_question_and_daily_handlers(
     await practice.practice_callback(
         fake_callback(message, "m:practice", student.telegram_user_id, bot), app
     )
+    await practice.choose_mode(
+        fake_callback(message, "pm:movement", student.telegram_user_id, bot), app
+    )
+    async with db_sessions() as session:
+        movement_session = await session.scalar(
+            select(PracticeSession).where(
+                PracticeSession.user_id == student.id,
+                PracticeSession.status == "active",
+            )
+        )
+        assert movement_session
+        assert movement_session.mode_id == "movement"
+        assert movement_session.planned_question_count == 6
+    await practice.choose_mode(
+        fake_callback(message, "pm:rectangle", student.telegram_user_id, bot), app
+    )
+    async with db_sessions() as session:
+        rectangle_session = await session.scalar(
+            select(PracticeSession).where(
+                PracticeSession.user_id == student.id,
+                PracticeSession.status == "active",
+            )
+        )
+        assert rectangle_session
+        assert rectangle_session.mode_id == "rectangle"
+        assert rectangle_session.planned_question_count == 6
     await practice.choose_mode(
         fake_callback(message, "pm:table", student.telegram_user_id, bot), app
     )

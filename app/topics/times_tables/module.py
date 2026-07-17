@@ -35,7 +35,7 @@ CONTENT_PATH = Path(__file__).with_name("content") / "strings.yaml"
 class TimesTablesModule:
     metadata = TopicMetadata(
         topic_id="times_tables",
-        version="1.2.0",
+        version="1.3.0",
         title_key="topic.title",
         short_title_key="topic.short_title",
         description_key="topic.description",
@@ -54,6 +54,8 @@ class TimesTablesModule:
             PracticeModeDefinition("quick", "mode.quick", "mode.quick.description", 5),
             PracticeModeDefinition("normal", "mode.normal", "mode.normal.description", 10),
             PracticeModeDefinition("weak", "mode.weak", "mode.weak.description", 10),
+            PracticeModeDefinition("movement", "mode.movement", "mode.movement.description", 6),
+            PracticeModeDefinition("rectangle", "mode.rectangle", "mode.rectangle.description", 6),
             PracticeModeDefinition("table", "mode.table", "mode.table.description", 10),
             PracticeModeDefinition("multiplication", "mode.mul", "mode.mul.description", 10),
             PracticeModeDefinition("division", "mode.div", "mode.div.description", 10),
@@ -158,8 +160,10 @@ class TimesTablesModule:
         configuration: dict[str, Any],
         rng: Random,
     ) -> tuple[tuple[str, str], ...]:
-        eligible = self._eligible(mode_id, mastery, configuration)
         now = datetime.now(UTC)
+        if mode_id in {"movement", "rectangle"}:
+            return self._formula_session_blueprint(mode_id, question_count, mastery, now, rng)
+        eligible = self._eligible(mode_id, mastery, configuration)
         chosen: list[str]
         if mode_id == "table":
             table_keys = list(eligible)
@@ -266,6 +270,47 @@ class TimesTablesModule:
             blueprint.append((key, question_type))
         return tuple(blueprint)
 
+    def _formula_session_blueprint(
+        self,
+        family: str,
+        question_count: int,
+        mastery: dict[str, MasteryState],
+        now: datetime,
+        rng: Random,
+    ) -> tuple[tuple[str, str], ...]:
+        directions = {
+            "movement": ("movement_distance", "movement_speed", "movement_time"),
+            "rectangle": ("rectangle_area", "rectangle_length", "rectangle_width"),
+        }[family]
+        question_types = [directions[index % len(directions)] for index in range(question_count)]
+        rng.shuffle(question_types)
+        ordered_by_operation: dict[str, list[str]] = {}
+        for operation in ("mul", "div"):
+            eligible = tuple(
+                skill.skill_key
+                for skill in self._skills
+                if skill.skill_key.startswith(f"{operation}:")
+            )
+            ordered_by_operation[operation] = list(
+                dict.fromkeys(weighted_skill_order(eligible, mastery, now, rng))
+            )
+        used_pairs: set[tuple[int, int]] = set()
+        blueprint: list[tuple[str, str]] = []
+        for question_type in question_types:
+            operation = "mul" if question_type in {"movement_distance", "rectangle_area"} else "div"
+            ordered = ordered_by_operation[operation]
+            key = next(
+                (
+                    candidate
+                    for candidate in ordered
+                    if parse_skill_key(candidate)[1:] not in used_pairs
+                ),
+                rng.choice(ordered),
+            )
+            used_pairs.add(parse_skill_key(key)[1:])
+            blueprint.append((key, question_type))
+        return tuple(blueprint)
+
     def _weak_factor_pairs(self, mastery: dict[str, MasteryState]) -> tuple[str, ...]:
         weak: list[str] = []
         for skill in self._skills:
@@ -366,6 +411,23 @@ class TimesTablesModule:
 
     def retry_question_type(self, skill_key: str, question_type: str, rng: Random) -> str:
         operation, _, _ = parse_skill_key(skill_key)
+        choices: tuple[str, ...]
+        if question_type.startswith("movement_"):
+            choices = (
+                ("movement_distance",)
+                if operation == "mul"
+                else ("movement_speed", "movement_time")
+            )
+            alternatives = [item for item in choices if item != question_type]
+            return rng.choice(alternatives or list(choices))
+        if question_type.startswith("rectangle_"):
+            choices = (
+                ("rectangle_area",)
+                if operation == "mul"
+                else ("rectangle_length", "rectangle_width")
+            )
+            alternatives = [item for item in choices if item != question_type]
+            return rng.choice(alternatives or list(choices))
         choices = (
             ("missing_factor", "direct_multiplication", "true_false")
             if operation == "mul"

@@ -1,6 +1,6 @@
 # Acceptance checklist
 
-Evidence updated on 2026-07-17 with Python 3.14.5, PostgreSQL 17.9, and Docker. Current combined automated evidence: `325 passed`, no skips, 85.63% overall coverage, Ruff clean, formatting clean, strict mypy clean, topic/content validation passed, clean Alembic upgrade passed, and `alembic check` reported no model drift.
+Evidence updated on 2026-07-17 with Python 3.14.5, PostgreSQL 17.9, and Docker. Current combined automated evidence: `328 passed`, no skips, 85.86% overall coverage, Ruff clean, formatting clean, strict mypy clean, topic/content validation passed, clean Alembic upgrade passed, and `alembic check` reported no model drift.
 
 ## A. Version-one scope
 
@@ -36,7 +36,7 @@ Evidence updated on 2026-07-17 with Python 3.14.5, PostgreSQL 17.9, and Docker. 
 - [x] Five-, ten-, table-, multiplication-, division-, and mixed-practice blueprints are tested.
 - [x] Table practice uses approximately 70% selected table, 20% weak review, and 10% confidence material.
 - [x] Times-table practice includes a Russian weak-pairs mode that selects unresolved factor pairs from multiplication and related-division mistakes, prioritises the most frequent mistakes, and falls back safely before any mistake has been recorded.
-- [x] Mixed times-table practice includes simple one-action Russian problems for all directions of `S = v × t` (distance, speed, time) and `S = a × b` (area, length, width).
+- [x] The times-table practice menu has two explicit Russian sections for one-action formula problems: movement (`S = v × t`) and rectangle area (`S = a × b`); each six-question session balances all three directions twice, while mixed practice may also include them.
 - [x] All seven required question types, unique plausible options, button answers, calm feedback, delayed retry, recovery, and summaries exist.
 - [x] The entire times-table student journey is Russian-localized, including menus, prompts, stories, feedback, progress, reminders, privacy text, and learning-image titles.
 - [x] Ownership, expiry, first-answer-only behavior, and database idempotency are enforced.
@@ -86,7 +86,7 @@ Evidence updated on 2026-07-17 with Python 3.14.5, PostgreSQL 17.9, and Docker. 
 
 - [x] `ruff check .` and `ruff format --check .` pass.
 - [x] `mypy app tests` passes in strict mode.
-- [x] `pytest` passes: 325 tests, no skips, 85.63% overall coverage.
+- [x] `pytest` passes: 328 tests, no skips, 85.86% overall coverage.
 - [x] Core/services/topic-domain coverage meets or exceeds 85%; overall exceeds 75%.
 - [x] Topic and content validators pass.
 - [x] Dependency lock, Dockerfile, Compose, persistent database volume, migration, environment example, README, backup/restore, and topic guide exist.
