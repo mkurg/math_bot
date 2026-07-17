@@ -189,4 +189,154 @@ def generate(
             options=_answers(correct, group_size, rng),
             payload={"operation": story_operation, "first": first, "second": second},
         )
+    if question_type == "movement_distance":
+        if operation != "mul":
+            raise ValueError("movement distance requires a multiplication skill")
+        return _question(
+            skill_key=skill_key,
+            kind=question_type,
+            prompt=content(
+                "problem.movement.distance",
+                speed=first,
+                time=second,
+                distance=product,
+            ),
+            correct=product,
+            equation=f"S = {first} × {second} = {product} м",
+            hint=content("hint.movement.distance"),
+            options=_answers(product, first, rng),
+            payload={
+                "operation": "mul",
+                "formula": "S=vt",
+                "direction": "distance",
+                "speed": first,
+                "time": second,
+                "distance": product,
+            },
+        )
+    if question_type == "movement_speed":
+        if operation != "div":
+            raise ValueError("movement speed requires a division skill")
+        return _question(
+            skill_key=skill_key,
+            kind=question_type,
+            prompt=content(
+                "problem.movement.speed",
+                speed=first,
+                time=second,
+                distance=product,
+            ),
+            correct=first,
+            equation=f"v = {product} ÷ {second} = {first} м/мин",
+            hint=content("hint.movement.speed"),
+            options=_answers(first, 1, rng),
+            payload={
+                "operation": "div",
+                "formula": "v=S/t",
+                "direction": "speed",
+                "speed": first,
+                "time": second,
+                "distance": product,
+            },
+        )
+    if question_type == "movement_time":
+        if operation != "div":
+            raise ValueError("movement time requires a division skill")
+        return _question(
+            skill_key=skill_key,
+            kind=question_type,
+            prompt=content(
+                "problem.movement.time",
+                speed=first,
+                time=second,
+                distance=product,
+            ),
+            correct=second,
+            equation=f"t = {product} ÷ {first} = {second} мин",
+            hint=content("hint.movement.time"),
+            options=_answers(second, 1, rng),
+            payload={
+                "operation": "div",
+                "formula": "t=S/v",
+                "direction": "time",
+                "speed": first,
+                "time": second,
+                "distance": product,
+            },
+        )
+    if question_type == "rectangle_area":
+        if operation != "mul":
+            raise ValueError("rectangle area requires a multiplication skill")
+        return _question(
+            skill_key=skill_key,
+            kind=question_type,
+            prompt=content(
+                "problem.rectangle.area",
+                length=first,
+                width=second,
+                area=product,
+            ),
+            correct=product,
+            equation=f"S = {first} × {second} = {product} см²",
+            hint=content("hint.rectangle.area"),
+            options=_answers(product, first, rng),
+            payload={
+                "operation": "mul",
+                "formula": "S=ab",
+                "direction": "area",
+                "length": first,
+                "width": second,
+                "area": product,
+            },
+        )
+    if question_type == "rectangle_length":
+        if operation != "div":
+            raise ValueError("rectangle length requires a division skill")
+        return _question(
+            skill_key=skill_key,
+            kind=question_type,
+            prompt=content(
+                "problem.rectangle.length",
+                length=first,
+                width=second,
+                area=product,
+            ),
+            correct=first,
+            equation=f"a = {product} ÷ {second} = {first} см",
+            hint=content("hint.rectangle.length"),
+            options=_answers(first, 1, rng),
+            payload={
+                "operation": "div",
+                "formula": "a=S/b",
+                "direction": "length",
+                "length": first,
+                "width": second,
+                "area": product,
+            },
+        )
+    if question_type == "rectangle_width":
+        if operation != "div":
+            raise ValueError("rectangle width requires a division skill")
+        return _question(
+            skill_key=skill_key,
+            kind=question_type,
+            prompt=content(
+                "problem.rectangle.width",
+                length=first,
+                width=second,
+                area=product,
+            ),
+            correct=second,
+            equation=f"b = {product} ÷ {first} = {second} см",
+            hint=content("hint.rectangle.width"),
+            options=_answers(second, 1, rng),
+            payload={
+                "operation": "div",
+                "formula": "b=S/a",
+                "direction": "width",
+                "length": first,
+                "width": second,
+                "area": product,
+            },
+        )
     raise ValueError(f"unknown times-table question type: {question_type}")

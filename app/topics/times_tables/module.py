@@ -35,7 +35,7 @@ CONTENT_PATH = Path(__file__).with_name("content") / "strings.yaml"
 class TimesTablesModule:
     metadata = TopicMetadata(
         topic_id="times_tables",
-        version="1.1.0",
+        version="1.2.0",
         title_key="topic.title",
         short_title_key="topic.short_title",
         description_key="topic.description",
@@ -208,13 +208,48 @@ class TimesTablesModule:
             candidates = [key for key in eligible if chosen.count(key) < 2]
             chosen.append(rng.choice(candidates or list(eligible)))
 
-        mul_types = ("direct_multiplication", "missing_factor", "true_false", "visual", "story")
-        div_types = ("direct_division", "missing_divisor", "story")
+        mul_types = (
+            "direct_multiplication",
+            "missing_factor",
+            "true_false",
+            "visual",
+            "story",
+            "movement_distance",
+            "rectangle_area",
+        )
+        div_types = (
+            "direct_division",
+            "missing_divisor",
+            "story",
+            "movement_speed",
+            "movement_time",
+            "rectangle_length",
+            "rectangle_width",
+        )
+        formula_problem_slots: dict[int, str] = {}
+        if mode_id == "mixed" and len(chosen) >= 2:
+            slots = rng.sample(range(len(chosen)), 2)
+            for slot, family in zip(slots, ("movement", "rectangle"), strict=True):
+                operation, _, _ = parse_skill_key(chosen[slot])
+                if family == "movement":
+                    formula_problem_slots[slot] = (
+                        "movement_distance"
+                        if operation == "mul"
+                        else rng.choice(("movement_speed", "movement_time"))
+                    )
+                else:
+                    formula_problem_slots[slot] = (
+                        "rectangle_area"
+                        if operation == "mul"
+                        else rng.choice(("rectangle_length", "rectangle_width"))
+                    )
         blueprint: list[tuple[str, str]] = []
         weak_occurrences: dict[str, int] = {}
         for index, key in enumerate(chosen):
             operation, _, _ = parse_skill_key(key)
-            if mode_id == "multiplication":
+            if index in formula_problem_slots:
+                question_type = formula_problem_slots[index]
+            elif mode_id == "multiplication":
                 question_type = rng.choice(("direct_multiplication", "missing_factor"))
             elif mode_id == "division":
                 question_type = rng.choice(("direct_division", "missing_divisor"))
@@ -438,6 +473,19 @@ class TimesTablesModule:
             templates = self.catalog.raw(f"story.{operation}")
             if not isinstance(templates, list) or len(templates) < 15:
                 errors.append(f"at least 15 {operation} story templates are required")
+        formula_types = (
+            ("mul:6:7", "movement_distance"),
+            ("div:6:7", "movement_speed"),
+            ("div:6:7", "movement_time"),
+            ("mul:6:7", "rectangle_area"),
+            ("div:6:7", "rectangle_length"),
+            ("div:6:7", "rectangle_width"),
+        )
+        try:
+            for skill_key, question_type in formula_types:
+                self.generate_question(skill_key, question_type, Random(42))
+        except Exception as exc:
+            errors.append(f"formula word problem failed: {exc}")
         try:
             for table in range(1, 11):
                 self.render_media("individual_table", {"table": table})

@@ -64,6 +64,12 @@ def test_all_direct_multiplication_and_division_facts(first: int, second: int) -
         ("mul:6:7", "visual"),
         ("mul:6:7", "story"),
         ("div:6:7", "story"),
+        ("mul:6:7", "movement_distance"),
+        ("div:6:7", "movement_speed"),
+        ("div:6:7", "movement_time"),
+        ("mul:6:7", "rectangle_area"),
+        ("div:6:7", "rectangle_length"),
+        ("div:6:7", "rectangle_width"),
     ],
 )
 def test_all_required_question_types(skill: str, question_type: str) -> None:
@@ -88,6 +94,59 @@ def test_generation_is_deterministic_with_fixed_seed() -> None:
     first = module.generate_question("mul:7:8", "story", Random(123))
     second = module.generate_question("mul:7:8", "story", Random(123))
     assert first == second
+
+
+@pytest.mark.parametrize(
+    ("skill", "question_type", "direction", "formula", "unit"),
+    [
+        ("mul:6:7", "movement_distance", "distance", "S=vt", "м"),
+        ("div:6:7", "movement_speed", "speed", "v=S/t", "м/мин"),
+        ("div:6:7", "movement_time", "time", "t=S/v", "мин"),
+        ("mul:6:7", "rectangle_area", "area", "S=ab", "см²"),
+        ("div:6:7", "rectangle_length", "length", "a=S/b", "см"),
+        ("div:6:7", "rectangle_width", "width", "b=S/a", "см"),
+    ],
+)
+def test_formula_word_problems_cover_all_directions_with_one_action(
+    skill: str, question_type: str, direction: str, formula: str, unit: str
+) -> None:
+    module = TimesTablesModule()
+    question = module.generate_question(skill, question_type, Random(42))
+    metadata = question.metadata
+    assert metadata["direction"] == direction
+    assert metadata["formula"] == formula
+    assert re.search(r"[А-Яа-яЁё]", question.rendered_prompt)
+    assert unit in question.explanation_payload["equation"]
+    equation = question.explanation_payload["equation"]
+    assert equation.count("×") + equation.count("÷") == 1
+    expected = {
+        "distance": metadata.get("distance"),
+        "speed": metadata.get("speed"),
+        "time": metadata.get("time"),
+        "area": metadata.get("area"),
+        "length": metadata.get("length"),
+        "width": metadata.get("width"),
+    }[direction]
+    assert question.correct_answer == {"value": expected}
+
+
+@pytest.mark.parametrize(
+    ("skill", "question_type"),
+    [
+        ("div:6:7", "movement_distance"),
+        ("mul:6:7", "movement_speed"),
+        ("mul:6:7", "movement_time"),
+        ("div:6:7", "rectangle_area"),
+        ("mul:6:7", "rectangle_length"),
+        ("mul:6:7", "rectangle_width"),
+    ],
+)
+def test_formula_word_problem_direction_matches_mastery_operation(
+    skill: str, question_type: str
+) -> None:
+    module = TimesTablesModule()
+    with pytest.raises(ValueError):
+        module.generate_question(skill, question_type, Random(42))
 
 
 def test_test_blueprints_have_required_composition() -> None:
@@ -128,6 +187,9 @@ def test_practice_modes_and_division_prerequisite() -> None:
     mastery = {"mul:6:7": MasteryState("mul:6:7", box=2)}
     with_mastery = module.session_blueprint("mixed", 20, mastery, {}, Random(2))
     assert any(key == "div:6:7" for key, _ in with_mastery)
+    mixed_types = {kind for _, kind in with_mastery}
+    assert any(kind.startswith("movement_") for kind in mixed_types)
+    assert any(kind.startswith("rectangle_") for kind in mixed_types)
     table = module.session_blueprint("table", 10, {}, {"table": 7}, Random(3))
     assert sum(7 in parse_skill_key(key)[1:] for key, _ in table) >= 7
     multiplication = module.session_blueprint("multiplication", 10, {}, {}, Random(4))
