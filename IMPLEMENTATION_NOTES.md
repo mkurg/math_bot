@@ -8,4 +8,4 @@
 - Invitations store only a SHA-256 hash. The displayed token is an HMAC-derived value that can be reconstructed for the active record and invalidated immediately by rotation.
 - Images are deterministic Pillow output. Committed assets improve responsiveness; runtime renderers remain available for visual questions and fallbacks.
 - The core handler layer imports only topic contracts and the registry. Production topic registration occurs only in `app/main.py`.
-
+- The `invariants` module adds an eight-part “What Refuses to Change?” theory sequence, seven adaptive practice modes, three challenges, daily review, and teacher misconception insights without a database migration.

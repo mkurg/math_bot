@@ -1,0 +1,184 @@
+topic.title: "Invariants — What Refuses to Change?"
+topic.short_title: "Invariants"
+topic.description: "Parity, remainders, preserved properties, and proofs of impossibility."
+
+menu.practice: "▶️ Practise"
+menu.learn: "🧭 Learn"
+menu.tests: "🧪 Challenges"
+menu.daily: "☀️ Daily task"
+menu.progress: "📊 My progress"
+menu.settings: "⚙️ Settings"
+menu.back: "Back"
+
+practice.title: "Choose how to practise invariants:"
+tests.title: "Choose an invariants challenge:"
+learn.title: "Follow the ideas in order, or revisit any one:"
+learn.practice: "Practise this idea"
+
+mode.quick: "🌱 Quick invariant hunt — 5"
+mode.quick.description: "A short adaptive mix of the central ideas."
+mode.guided: "🧭 Guided lesson practice — 8"
+mode.guided.description: "Moves from noticing a pattern to proving impossibility."
+mode.parity: "⚫ Parity and card flips — 8"
+mode.parity.description: "Even, odd, coin moves, and flipping exactly two cards."
+mode.remainders: "🔢 Remainders — 8"
+mode.remainders.description: "Track what remains fixed modulo 3, 5, or 10."
+mode.proof: "🔍 Proof or possibility? — 8"
+mode.proof.description: "Check every move, rule targets out, and construct routes."
+mode.advanced: "🚀 Deeper invariants — 8"
+mode.advanced.description: "Stronger remainders and the odd part under doubling."
+mode.weak: "🌿 My developing ideas — 8"
+mode.weak.description: "Adaptive review of concepts that need another look."
+
+challenge.foundations: "Foundations Challenge — 10"
+challenge.method: "Invariant Method Challenge — 12"
+challenge.final: "Final Invariants Challenge — 16"
+
+feedback.correct: "✅ Exactly — you tracked what the moves preserve."
+feedback.incorrect: "🌱 Not yet — compare the start, every legal move, and the target."
+feedback.hint: "Think about this: {hint}"
+
+learn.coins.title: "1. Coin game: what stays?"
+learn.coins.body: |
+  Start with 10 coins. Each move adds exactly 2 coins or removes exactly 2.
+
+  The exact number changes: 10 → 8 or 12 → 6 or 10 or 14. But every reachable number is even. We cannot reach 9 or 11, while 12 is one move away.
+
+  Proof pattern:
+  Start: even.
+  Every move: even ± 2 is even.
+  Therefore every reachable state is even.
+
+  One preserved property rules out infinitely many move sequences without trying them all.
+
+learn.start.title: "2. The starting state decides"
+learn.start.body: |
+  Now start with 11 and keep the same ±2 moves. Every reachable number is odd.
+
+  The permanent property is not “the number is even.” It is “the number keeps the parity of the starting value.”
+
+  The move does not choose even or odd. The starting state chooses it, and every legal move preserves it.
+
+learn.cards.title: "3. Flip exactly two cards"
+learn.cards.body: |
+  Begin with 4 black and 4 white two-sided cards. A move flips exactly two cards.
+
+  BB → WW changes the black count by −2.
+  WW → BB changes it by +2.
+  BW → WB changes it by 0.
+
+  Every possible change is even, so the parity of the number of black cards stays fixed. Starting from 4 black cards, exactly 1 black card is impossible.
+
+  The cards and even the black-card count may change. The invariant is only whether that count is odd or even.
+
+learn.remainders.title: "4. From parity to remainders"
+learn.remainders.body: |
+  Start at 20 and allow +3 or −3.
+
+  Parity can change: 20 → 23. Instead, divide each state by 3. The states 20, 23, 17, and 26 all leave remainder 2.
+
+  Adding or subtracting 3 changes the quotient but not the remainder modulo 3. So 98 and 101 are reachable from 20, but 100 is impossible.
+
+  Parity is the simplest remainder invariant: it records the remainder modulo 2.
+
+learn.method.title: "5. The four-step invariant method"
+learn.method.body: |
+  1. Describe the state. What exactly changes?
+  2. Suggest a property: parity, a remainder, a count, a sum, a colour pattern, or something structural.
+  3. Check every type of allowed move. Surviving a few examples is not enough.
+  4. Compare the start and target.
+
+  Different invariant values → the target is impossible.
+  Matching invariant values → the target is not ruled out, but it is not proved reachable.
+
+  An invariant is a property that stays unchanged throughout a process even while the state changes.
+
+learn.warning.title: "6. Matching does not prove reachable"
+learn.warning.body: |
+  Start with 5 black cards and flip exactly two cards per move. Could we finish with 1 black card?
+
+  Both counts are odd, so parity does not forbid the target. But that fact alone is not a route.
+
+  To prove possibility, construct moves or give another argument. Here a route exists: flip two black cards twice, changing 5 → 3 → 1.
+
+  Invariants are especially powerful for proving impossibility. A match means “maybe,” not automatically “yes.”
+
+learn.evidence.title: "7. Experiments and proof"
+learn.evidence.body: |
+  A program can try thousands of ±2 moves and never reach an odd number. That is useful evidence, but no finite collection of trials checks every possible future sequence.
+
+  The proof is short and complete:
+  the start is even;
+  every allowed move preserves evenness;
+  therefore every future state is even.
+
+  A program assertion such as x % 2 == starting_parity can test the prediction. The assertion agrees with the proof; it does not replace the proof.
+
+learn.advanced.title: "8. Stronger and less obvious invariants"
+learn.advanced.body: |
+  Start at 23 with moves ±10. Parity stays fixed, but the remainder modulo 10 tells us more: every reachable number ends in 3.
+
+  Start at 12 with moves “multiply by 2” and “divide by 2 when the result is whole.” Write each number as an odd part times a power of 2:
+  12 = 3 × 2², 6 = 3 × 2, 3 = 3, 48 = 3 × 2⁴.
+
+  The power of 2 changes, but the odd part stays 3. So 18, whose odd part is 9, is impossible.
+
+  Useful invariants are not always numerical totals, and several invariants may exist at once.
+
+skill.discover.state: "State and property"
+skill.discover.state.description: "Tell the changing value apart from a property that stays fixed."
+skill.discover.parity: "Parity invariant"
+skill.discover.parity.description: "Recognise that evenness or oddness is preserved."
+skill.preserve.moves: "Check every move"
+skill.preserve.moves.description: "Verify a candidate invariant against every legal move."
+skill.preserve.cards: "Two-card flips"
+skill.preserve.cards.description: "Track the parity of the black-card count."
+skill.preserve.remainders: "Remainder invariant"
+skill.preserve.remainders.description: "Track a fixed remainder under additive moves."
+skill.prove.impossible: "Impossibility proof"
+skill.prove.impossible.description: "Compare invariant values to rule out a target."
+skill.prove.construct: "Reachability construction"
+skill.prove.construct.description: "Give a legal route when a target is reachable."
+skill.prove.warning: "Matching is not enough"
+skill.prove.warning.description: "Understand the logical limit of an invariant."
+skill.reason.proof: "Evidence versus proof"
+skill.reason.proof.description: "Know why examples suggest but do not prove an invariant."
+skill.extend.stronger: "Stronger invariant"
+skill.extend.stronger.description: "Choose the preserved property that gives the most information."
+skill.extend.odd_part: "Odd-part invariant"
+skill.extend.odd_part.description: "Track the odd factor through doubling and halving."
+
+question.position: "Question {position} of {total}"
+question.next: "Next"
+question.saved: "Answer saved. Results appear when the challenge is finished."
+question.hint: "💡 Hint"
+question.hint_number: "💡 Hint {number}: {hint}"
+question.hints_done: "All available hints are already open."
+question.practise_skill: "Practise this idea"
+question.open_explanation: "Open explanation"
+question.explanation_title: "Explanation"
+session.summary: "Practice complete: {correct}/{total} correct across {skills} ideas. Keep asking what refuses to change 🌱"
+session.again: "Practise again"
+session.menu: "Main menu"
+test.summary: "Challenge complete: {correct}/{total} ({percentage}%). You reviewed {skills} ideas."
+test.weak: "Practise developing ideas"
+progress.title: "📊 My invariants progress"
+progress.none: "No recorded strengths yet — they will appear as you practise."
+progress.strong: "Strong ideas"
+progress.learning: "Learning now"
+progress.recent: "Recent challenges"
+progress.strong_inline: "Strong"
+progress.next_inline: "Practise next"
+daily.title: "☀️ Today’s invariant question:"
+daily.done: "Done for today"
+daily.more: "One more"
+daily.five: "Practise for 5 questions"
+daily.already: "Today’s question is already prepared. You can still do a quick practice."
+returning: "Welcome back! What refuses to change today?"
+main_menu: "Choose an invariants activity:"
+use_buttons: "Please use the buttons below 🙂"
+welcome: "👋 Welcome, {name}! We will look for properties that moves cannot change."
+onboarding.quick: "Start 5 questions"
+onboarding.reminders: "Choose reminders"
+onboarding.menu: "Open menu"
+help: "Use the buttons to study theory, practise, take a challenge, or view progress. The key question is: what does every allowed move preserve?"

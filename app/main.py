@@ -18,6 +18,7 @@ from app.handlers import build_router
 from app.logging import configure_logging
 from app.services.invitations import InvitationService
 from app.services.users import ensure_initial_records
+from app.topics.invariants import InvariantsModule
 from app.topics.numeral_systems import NumeralSystemsModule
 from app.topics.times_tables import TimesTablesModule
 from app.workers.daily_questions import run_daily_worker
@@ -29,6 +30,7 @@ async def run() -> None:
     registry = TopicRegistry()
     registry.register(TimesTablesModule())
     registry.register(NumeralSystemsModule())
+    registry.register(InvariantsModule())
     registry.configure(settings.enabled_topics, settings.default_topic_id)
     content = ContentCatalog(Path(__file__).parent / "content" / "core" / "strings.yaml")
     engine, sessions = create_engine_and_sessionmaker(settings.database_url)
@@ -48,7 +50,7 @@ async def run() -> None:
             BotCommand(command="start", description="Start or open the menu"),
             BotCommand(command="menu", description="Open the main menu"),
             BotCommand(command="practice", description="Start practice"),
-            BotCommand(command="learn", description="Learn tables"),
+            BotCommand(command="learn", description="Learn the current topic"),
             BotCommand(command="test", description="Take a test"),
             BotCommand(command="progress", description="View progress"),
             BotCommand(command="settings", description="Reminder settings"),

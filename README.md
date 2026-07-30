@@ -1,11 +1,15 @@
 # Modular Mathematics Bot
 
-A private, invitation-only Telegram bot with two isolated learning modules:
+A private, invitation-only Telegram bot with three isolated learning modules:
 
 - **Times Tables** — a fully Russian multiplication and related exact-division experience for factors 1 through 10;
-- **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation, with three progressive difficulty tiers.
+- **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation, with three progressive difficulty tiers;
+- **Invariants — What Refuses to Change?** — an eight-part theory sequence and adaptive practice on parity, remainders, checking every allowed move, impossibility proofs, reachability constructions, evidence versus proof, stronger invariants, and the odd part of a number.
 
-Each student has one active assigned module. Menus, practice, challenges/tests, learning material, daily questions, mastery, and progress resolve through that assignment. The teacher sees students from both modules and may change an individual assignment without mixing historical topic data.
+Each student has one active assigned module. Menus, practice, challenges/tests, learning
+material, daily questions, mastery, and progress resolve through that assignment. The
+teacher sees students from all modules and may change an individual assignment without
+mixing historical topic data.
 
 Long multiple-choice answers are printed in full below the question and selected with compact A/B/C/D buttons, avoiding Telegram's non-wrapping button-label limit. Numeral-systems Tier 1 teaches foundations without decimal conversion drills, Tier 2 uses small single-group binary↔octal/hexadecimal mappings, and Tier 3 retains the original complete difficulty.
 
@@ -48,7 +52,7 @@ Open `/admin` as the configured teacher, select **Invite link**, and generate th
 - `DEFAULT_TIMEZONE`: IANA timezone, normally `Europe/Zurich`.
 - `DEFAULT_REMINDER_HOUR`: whole hour from 07 through 20.
 - `DEFAULT_REMINDER_DAYS`: `DAILY`, `WEEKDAYS`, `MWF`, or `OFF`.
-- `ENABLED_TOPIC_IDS`: comma-separated topic IDs; production uses `times_tables,numeral_systems`.
+- `ENABLED_TOPIC_IDS`: comma-separated topic IDs; production uses `times_tables,numeral_systems,invariants`.
 - `DEFAULT_TOPIC_ID`: must be included in the enabled list.
 - `APP_ENV`: `development`, `test`, or `production`.
 - `LOG_LEVEL`: standard logging level such as `INFO`.
@@ -129,4 +133,8 @@ docker compose up -d bot
 
 Never place `.env`, `metadata.py`, a BotFather token, or a database dump in Git. Transfer production secrets directly to the server over SSH and restrict the file to the deployment user.
 
-See [TOPIC_DEVELOPMENT_GUIDE.md](TOPIC_DEVELOPMENT_GUIDE.md) for the extension contract, [ACCEPTANCE_CHECKLIST.md](ACCEPTANCE_CHECKLIST.md) for the original times-table evidence, and [NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md](NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md) for the second module.
+See [TOPIC_DEVELOPMENT_GUIDE.md](TOPIC_DEVELOPMENT_GUIDE.md) for the extension contract,
+[ACCEPTANCE_CHECKLIST.md](ACCEPTANCE_CHECKLIST.md) for the original times-table evidence,
+[NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md](NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md) for the
+second module, and [INVARIANTS_ACCEPTANCE_CHECKLIST.md](INVARIANTS_ACCEPTANCE_CHECKLIST.md)
+for the third module.

@@ -27,6 +27,7 @@ from app.services.privacy import delete_student_data
 from app.services.sessions import independent_question, next_question, start_session
 from app.services.statistics import progress_for_user, topic_group_metrics, user_metrics
 from app.services.users import create_student, ensure_initial_records
+from app.topics.invariants import InvariantsModule
 from app.topics.numeral_systems import NumeralSystemsModule
 from app.topics.times_tables import TimesTablesModule
 from app.topics.times_tables.skills import parse_skill_key
@@ -48,7 +49,11 @@ def settings() -> Settings:
     )
 
 
-def registry(with_sample: bool = False, with_numeral: bool = False) -> TopicRegistry:
+def registry(
+    with_sample: bool = False,
+    with_numeral: bool = False,
+    with_invariants: bool = False,
+) -> TopicRegistry:
     result = TopicRegistry()
     result.register(TimesTablesModule())
     enabled = ["times_tables"]
@@ -58,6 +63,9 @@ def registry(with_sample: bool = False, with_numeral: bool = False) -> TopicRegi
     if with_numeral:
         result.register(NumeralSystemsModule())
         enabled.append("numeral_systems")
+    if with_invariants:
+        result.register(InvariantsModule())
+        enabled.append("invariants")
     result.configure(tuple(enabled), "times_tables")
     return result
 
@@ -321,17 +329,20 @@ async def test_sample_topic_generic_session_and_daily_flow(
 
 
 @pytest.mark.asyncio
-async def test_two_real_topics_are_strictly_isolated_for_sessions_daily_and_progress(
+async def test_three_real_topics_are_strictly_isolated_for_sessions_daily_and_progress(
     db_sessions: async_sessionmaker[AsyncSession],
 ) -> None:
     times_student = await seed_student(db_sessions, telegram_id=701)
     numeral_student = await seed_student(db_sessions, telegram_id=702)
-    module_registry = registry(with_numeral=True)
+    invariants_student = await seed_student(db_sessions, telegram_id=703)
+    module_registry = registry(with_numeral=True, with_invariants=True)
     async with db_sessions() as session, session.begin():
         times_user = await session.get(User, times_student.id)
         numeral_user = await session.get(User, numeral_student.id)
-        assert times_user and numeral_user
+        invariants_user = await session.get(User, invariants_student.id)
+        assert times_user and numeral_user and invariants_user
         numeral_user.selected_topic_id = "numeral_systems"
+        invariants_user.selected_topic_id = "invariants"
 
         times_session = await start_session(
             session, module_registry, times_user, "quick", "practice"
@@ -339,10 +350,15 @@ async def test_two_real_topics_are_strictly_isolated_for_sessions_daily_and_prog
         numeral_session = await start_session(
             session, module_registry, numeral_user, "quick", "practice"
         )
+        invariants_session = await start_session(
+            session, module_registry, invariants_user, "guided", "practice"
+        )
         times_question = await next_question(session, module_registry, times_session)
         numeral_question = await next_question(session, module_registry, numeral_session)
+        invariants_question = await next_question(session, module_registry, invariants_session)
         assert times_question and times_question.topic_id == "times_tables"
         assert numeral_question and numeral_question.topic_id == "numeral_systems"
+        assert invariants_question and invariants_question.topic_id == "invariants"
 
         times_daily, times_daily_question = await prepare_daily_question(
             session, module_registry, times_user
@@ -350,10 +366,15 @@ async def test_two_real_topics_are_strictly_isolated_for_sessions_daily_and_prog
         numeral_daily, numeral_daily_question = await prepare_daily_question(
             session, module_registry, numeral_user
         )
+        invariants_daily, invariants_daily_question = await prepare_daily_question(
+            session, module_registry, invariants_user
+        )
         assert times_daily.topic_id == "times_tables"
         assert times_daily_question and times_daily_question.topic_id == "times_tables"
         assert numeral_daily.topic_id == "numeral_systems"
         assert numeral_daily_question and numeral_daily_question.topic_id == "numeral_systems"
+        assert invariants_daily.topic_id == "invariants"
+        assert invariants_daily_question and invariants_daily_question.topic_id == "invariants"
 
         generated = module_registry.get("numeral_systems").generate_question(
             "hexadecimal:dec_to_hex", "direct_conversion", Random(7)
@@ -369,13 +390,32 @@ async def test_two_real_topics_are_strictly_isolated_for_sessions_daily_and_prog
             str(generated.correct_answer["value"]),
         )
         assert outcome.evaluation.is_correct
+        invariants_answer = next(
+            index
+            for index, option in enumerate(invariants_question.options)
+            if option["value"] == invariants_question.correct_answer
+        )
+        invariant_outcome = await submit_answer(
+            session,
+            module_registry,
+            invariants_user,
+            invariants_question.public_id,
+            invariants_answer,
+        )
+        assert invariant_outcome.evaluation.is_correct
         numeral_progress = await progress_for_user(session, module_registry, numeral_user)
+        invariants_progress = await progress_for_user(session, module_registry, invariants_user)
         times_progress = await progress_for_user(session, module_registry, times_user)
         assert numeral_progress.headline_metrics[0].value == "1"
+        assert invariants_progress.headline_metrics[0].value == "1"
         assert times_progress.headline_metrics[0].value == "0"
 
         breakdown = await topic_group_metrics(session)
-        assert {row[0] for row in breakdown} == {"times_tables", "numeral_systems"}
+        assert {row[0] for row in breakdown} == {
+            "times_tables",
+            "numeral_systems",
+            "invariants",
+        }
 
 
 @pytest.mark.asyncio
