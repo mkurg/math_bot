@@ -134,7 +134,7 @@ async def mirror_question(
 ) -> None:
     prompt = str(question.prompt_payload.get("rendered_prompt", ""))
     options = "\n".join(
-        f"{chr(ord('A') + index)} — {option.get('label', '')}"
+        f"{chr(ord('A') + index)}: {option.get('label', '')}"
         for index, option in enumerate(question.options)
     )
     if daily:

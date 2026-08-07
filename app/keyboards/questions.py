@@ -31,7 +31,7 @@ def answer_choices_text(question: Question) -> str:
     if not question.options:
         return ""
     return "\n".join(
-        f"<b>{chr(ord('A') + index)}</b> — {escape(str(option['label']))}"
+        f"<b>{chr(ord('A') + index)}</b>: {escape(str(option['label']))}"
         for index, option in enumerate(question.options)
     )
 

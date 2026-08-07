@@ -18,6 +18,8 @@ from app.services.sessions import next_question, start_session
 
 router = Router(name="learning")
 
+LEARNING_MENU_LABELS = {"📚 Learn tables", "🧭 Learn", "📚 Учить таблицу", "📚 Теория"}
+
 
 async def show_learning(
     message: Message | InaccessibleMessage,
@@ -35,7 +37,8 @@ async def show_learning(
         )
         for index, unit in enumerate(units)
     ]
-    rows = [buttons[index : index + 2] for index in range(0, len(buttons), 2)]
+    width = 1 if len(buttons) > 10 else 2
+    rows = [buttons[index : index + width] for index in range(0, len(buttons), width)]
     rows.append(
         [InlineKeyboardButton(text=app.text("menu.back", topic_id), callback_data="m:menu")]
     )
@@ -54,7 +57,7 @@ async def show_learning(
 
 
 @router.message(Command("learn"))
-@router.message(F.text.in_({"📚 Learn tables", "🧭 Learn", "📚 Учить таблицу"}))
+@router.message(F.text.in_(LEARNING_MENU_LABELS))
 async def learning_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)

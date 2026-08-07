@@ -433,3 +433,5 @@ def test_long_choice_answers_are_fully_shown_in_text_with_compact_buttons() -> N
     rendered = answer_choices_text(question)
     assert long_answer in rendered
     assert "<b>A</b>" in rendered and "<b>D</b>" in rendered
+    assert " — " not in rendered
+    assert "</b>: " in rendered

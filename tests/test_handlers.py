@@ -416,3 +416,36 @@ async def test_numeral_student_pad_hint_menus_and_admin_assignment(
     async with db_sessions() as session:
         reassigned = await session.get(User, student.id)
         assert reassigned and reassigned.selected_topic_id == "times_tables"
+
+
+@pytest.mark.asyncio
+async def test_russian_algebra_theory_reply_button_opens_all_units(
+    db_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    student = await seed_student(db_sessions, telegram_id=305)
+    app = make_app(db_sessions, with_algebra=True)
+    bot = AsyncMock()
+    message = fake_message(student.telegram_user_id, bot)
+    async with db_sessions() as session, session.begin():
+        stored = await session.get(User, student.id)
+        assert stored
+        stored.selected_topic_id = "algebraic_expressions"
+
+    assert "📚 Теория" in learning.LEARNING_MENU_LABELS
+    await menu.menu_command(message, app)
+    main_markup = cast(AsyncMock, message.answer).await_args_list[0].kwargs["reply_markup"]
+    assert main_markup.keyboard[0][1].text == "📚 Теория"
+
+    await learning.learning_menu(message, app)
+    theory_call = cast(AsyncMock, message.answer).await_args_list[1]
+    assert theory_call.args[0] == "Изучай темы по порядку или вернись к нужной:"
+    theory_markup = theory_call.kwargs["reply_markup"]
+    assert isinstance(theory_markup, InlineKeyboardMarkup)
+    assert len(theory_markup.inline_keyboard) == 16
+    assert all(len(row) == 1 for row in theory_markup.inline_keyboard)
+    assert [row[0].callback_data for row in theory_markup.inline_keyboard[:15]] == [
+        f"lu:{index}" for index in range(15)
+    ]
+
+    await learning.learning_unit(fake_callback(message, "lu:0", student.telegram_user_id, bot), app)
+    assert "Из чего состоит выражение" in cast(AsyncMock, message.answer).await_args.args[0]
