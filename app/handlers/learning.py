@@ -13,13 +13,17 @@ from aiogram.types import (
 
 from app.bot import Application
 from app.handlers.common import actor, callback_actor, send_question
+from app.services.live_lessons import mirror_photo, record_live_event
 from app.services.sessions import next_question, start_session
 
 router = Router(name="learning")
 
 
 async def show_learning(
-    message: Message | InaccessibleMessage, app: Application, topic_id: str
+    message: Message | InaccessibleMessage,
+    app: Application,
+    topic_id: str,
+    student_id: int | None = None,
 ) -> None:
     message = cast(Message, message)
     topic = app.registry.get(topic_id)
@@ -38,6 +42,15 @@ async def show_learning(
     await message.answer(
         topic.content("learn.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
+    if student_id is not None:
+        await record_live_event(
+            message.bot,
+            app,
+            student_id,
+            "learning_menu",
+            "Ученик открыл раздел теории",
+            "\n".join(topic.content(unit.title_key) for unit in units),
+        )
 
 
 @router.message(Command("learn"))
@@ -46,7 +59,7 @@ async def learning_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if user:
-        await show_learning(message, app, user.selected_topic_id)
+        await show_learning(message, app, user.selected_topic_id, user.id)
 
 
 @router.callback_query(F.data.startswith("lu:"))
@@ -104,6 +117,14 @@ async def learning_unit(callback: CallbackQuery, app: Application) -> None:
         f"<b>{view.title}</b>\n\n{view.body}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
     )
+    await record_live_event(
+        callback.bot,
+        app,
+        user.id,
+        "theory",
+        f"Теория: {view.title}",
+        view.body,
+    )
 
 
 @router.callback_query(F.data == "m:learn")
@@ -114,7 +135,7 @@ async def learning_back(callback: CallbackQuery, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await callback_actor(session, callback)
     if user:
-        await show_learning(callback.message, app, user.selected_topic_id)
+        await show_learning(callback.message, app, user.selected_topic_id, user.id)
 
 
 async def _learning_context(callback: CallbackQuery, app: Application):  # type: ignore[no-untyped-def]
@@ -139,10 +160,26 @@ async def learning_image(callback: CallbackQuery, app: Application) -> None:
     result = await _learning_context(callback, app)
     if not result:
         return
-    _, topic, _, view = result
+    user, topic, _, view = result
     if view.image_renderer_id:
         data = topic.render_media(view.image_renderer_id, view.image_payload)
         await callback.message.answer_photo(BufferedInputFile(data, filename="table.png"))
+        await record_live_event(
+            callback.bot,
+            app,
+            user.id,
+            "theory_image",
+            f"Ученик открыл иллюстрацию: {view.title}",
+            view.body,
+        )
+        await mirror_photo(
+            callback.bot,
+            app,
+            user.id,
+            data,
+            f"Иллюстрация к теории: {view.title}",
+            filename="theory.png",
+        )
 
 
 @router.callback_query(F.data.startswith("ld:"))
@@ -155,6 +192,14 @@ async def learning_division(callback: CallbackQuery, app: Application) -> None:
         await callback.message.answer(
             f"<b>{app.text('learn.related_title', result[0].selected_topic_id)}</b>"
             f"\n\n{result[3].related_text}"
+        )
+        await record_live_event(
+            callback.bot,
+            app,
+            result[0].id,
+            "related_theory",
+            f"Дополнительный материал: {result[3].title}",
+            result[3].related_text,
         )
 
 

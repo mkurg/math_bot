@@ -67,12 +67,17 @@ def fake_callback(
     return cast(CallbackQuery, value)
 
 
-def make_app(maker: async_sessionmaker[AsyncSession], *, with_numeral: bool = False) -> Application:
+def make_app(
+    maker: async_sessionmaker[AsyncSession],
+    *,
+    with_numeral: bool = False,
+    with_algebra: bool = False,
+) -> Application:
     configured = integration_settings()
     return Application(
         configured,
         maker,
-        registry(with_numeral=with_numeral),
+        registry(with_numeral=with_numeral, with_algebra=with_algebra),
         ContentCatalog(Path(__file__).parents[1] / "app" / "content" / "core" / "strings.yaml"),
         InvitationService(configured.bot_token, configured.bot_username),
     )

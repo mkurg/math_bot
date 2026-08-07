@@ -19,7 +19,7 @@ async def menu_command(message: Message, app: Application) -> None:
             await message.answer("Teacher profile", reply_markup=ReplyKeyboardRemove())
             await message.answer(app.content.get("admin.title"), reply_markup=admin_keyboard(app))
             return
-        await show_main_menu(message, app, user.selected_topic_id)
+        await show_main_menu(message, app, user.selected_topic_id, student_id=user.id)
     else:
         await message.answer(app.text("invite_required", app.settings.default_topic_id))
 
@@ -38,7 +38,7 @@ async def menu_callback(callback: CallbackQuery, app: Application) -> None:
                     app.content.get("admin.title"), reply_markup=admin_keyboard(app)
                 )
                 return
-            await show_main_menu(callback.message, app, user.selected_topic_id)
+            await show_main_menu(callback.message, app, user.selected_topic_id, student_id=user.id)
 
 
 @router.message(Command("help"))
@@ -62,4 +62,4 @@ async def unexpected_text(message: Message, app: Application) -> None:
         await message.answer(app.content.get("admin.title"), reply_markup=admin_keyboard(app))
         return
     await message.answer(app.text("use_buttons", user.selected_topic_id))
-    await show_main_menu(message, app, user.selected_topic_id)
+    await show_main_menu(message, app, user.selected_topic_id, student_id=user.id)

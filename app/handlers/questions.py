@@ -26,6 +26,7 @@ from app.services.answers import (
     submit_answer,
     submit_constructed_answer,
 )
+from app.services.live_lessons import mirror_answer, record_live_event
 from app.services.sessions import next_question, start_session
 from app.services.statistics import progress_for_user
 
@@ -173,11 +174,20 @@ async def show_hint(callback: CallbackQuery, app: Application) -> None:
             hint=escape(hint),
         )
     )
+    await record_live_event(
+        callback.bot,
+        app,
+        question.user_id,
+        "hint",
+        "Ученик открыл подсказку",
+        f"{question.prompt_payload.get('rendered_prompt', '')}\n\nПодсказка {used + 1}: {hint}",
+    )
 
 
 async def _show_outcome(callback: CallbackQuery, app: Application, outcome: AnswerOutcome) -> None:
     if not callback.message:
         return
+    await mirror_answer(callback.bot, app, outcome)
     topic = app.registry.get(outcome.question.topic_id)
     if outcome.session and outcome.session.session_kind == "test":
         if outcome.completed:
@@ -328,6 +338,14 @@ async def _session_summary(
         ]
     )
     await callback.message.answer(text, reply_markup=keyboard)
+    await record_live_event(
+        callback.bot,
+        app,
+        outcome.question.user_id,
+        "session_summary",
+        "Итог занятия",
+        text,
+    )
 
 
 @router.callback_query(F.data.startswith("n:"))
@@ -350,7 +368,7 @@ async def next_answer(callback: CallbackQuery, app: Application) -> None:
     if question:
         await send_question(callback.bot, callback.message, app, question, practice_session)
     else:
-        await show_main_menu(callback.message, app, user.selected_topic_id)
+        await show_main_menu(callback.message, app, user.selected_topic_id, student_id=user.id)
 
 
 @router.callback_query(F.data.regexp(r"^dps:[A-Za-z0-9_-]{4,16}$"))
@@ -390,4 +408,12 @@ async def daily_explanation(callback: CallbackQuery, app: Application) -> None:
         explanation = escape(str(question.evaluation_payload.get("equation", "")))
         await callback.message.answer(
             f"<b>{app.text('question.explanation_title', question.topic_id)}</b>\n\n{explanation}"
+        )
+        await record_live_event(
+            callback.bot,
+            app,
+            user.id,
+            "explanation",
+            "Ученик открыл объяснение",
+            str(question.evaluation_payload.get("equation", "")),
         )

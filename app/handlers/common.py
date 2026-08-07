@@ -19,6 +19,7 @@ from app.bot import Application
 from app.database.models import PracticeSession, Question, User
 from app.keyboards.common import main_menu
 from app.keyboards.questions import answer_choices_text, answer_keyboard
+from app.services.live_lessons import mirror_photo, mirror_question, record_live_event
 from app.services.users import get_user, touch_user
 
 
@@ -53,10 +54,29 @@ async def show_main_menu(
     app: Application,
     topic_id: str,
     text_key: str = "main_menu",
+    student_id: int | None = None,
 ) -> None:
     message = cast(Message, message)
     topic = app.registry.get(topic_id)
     await message.answer(app.text(text_key, topic_id), reply_markup=main_menu(topic))
+    if student_id is not None:
+        await record_live_event(
+            message.bot,
+            app,
+            student_id,
+            "main_menu",
+            "Ученик открыл главное меню",
+            "\n".join(
+                (
+                    topic.content("menu.practice"),
+                    topic.content("menu.learn"),
+                    topic.content("menu.tests"),
+                    topic.content("menu.daily"),
+                    topic.content("menu.progress"),
+                    topic.content("menu.settings"),
+                )
+            ),
+        )
 
 
 async def send_question(
@@ -108,10 +128,26 @@ async def send_question(
                 caption=prompt,
                 reply_markup=keyboard,
             )
+            await mirror_question(
+                bot,
+                app,
+                question,
+                practice_session,
+                daily=daily,
+            )
+            await mirror_photo(
+                bot,
+                app,
+                question.user_id,
+                data,
+                "Изображение к вопросу",
+                filename=f"{question.public_id}.png",
+            )
             return
         except TelegramAPIError:
             prompt = f"{escape(str(media['fallback_text']))}\n\n{prompt}"
     await message.answer(prompt, reply_markup=keyboard)
+    await mirror_question(bot, app, question, practice_session, daily=daily)
 
 
 def next_keyboard(question: Question, app: Application) -> InlineKeyboardMarkup:

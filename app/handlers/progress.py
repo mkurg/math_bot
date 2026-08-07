@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from app.bot import Application
 from app.core.topics.contracts import TopicProgressView
 from app.handlers.common import actor
+from app.services.live_lessons import record_live_event
 from app.services.statistics import progress_for_user
 
 router = Router(name="progress")
@@ -66,13 +67,19 @@ async def progress(message: Message, app: Application) -> None:
                     ]
                 ]
             )
-    await message.answer(
-        render_progress(
-            view,
-            app.text("progress.title", user.selected_topic_id),
-            strong_title=app.text("progress.strong", user.selected_topic_id),
-            learning_title=app.text("progress.learning", user.selected_topic_id),
-            recent_title=app.text("progress.recent", user.selected_topic_id),
-        ),
-        reply_markup=reply_markup,
+    rendered = render_progress(
+        view,
+        app.text("progress.title", user.selected_topic_id),
+        strong_title=app.text("progress.strong", user.selected_topic_id),
+        learning_title=app.text("progress.learning", user.selected_topic_id),
+        recent_title=app.text("progress.recent", user.selected_topic_id),
+    )
+    await message.answer(rendered, reply_markup=reply_markup)
+    await record_live_event(
+        message.bot,
+        app,
+        user.id,
+        "progress",
+        "Ученик открыл свой прогресс",
+        rendered.replace("<b>", "").replace("</b>", ""),
     )

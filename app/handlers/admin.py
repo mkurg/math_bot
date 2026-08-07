@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from html import escape
 from typing import cast
 
 from aiogram import F, Router
@@ -27,6 +28,7 @@ from app.database.models import (
 from app.handlers.common import actor, callback_actor
 from app.handlers.progress import render_progress
 from app.handlers.settings import FREQUENCIES
+from app.services.live_lessons import notify_student_live_status
 from app.services.statistics import (
     difficult_skills,
     group_metrics,
@@ -39,6 +41,10 @@ from app.services.statistics import (
 router = Router(name="admin")
 
 
+def _message_chunks(value: str, size: int = 3_500) -> tuple[str, ...]:
+    return tuple(value[index : index + size] for index in range(0, len(value), size)) or ("",)
+
+
 def admin_keyboard(app: Application) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -48,6 +54,7 @@ def admin_keyboard(app: Application) -> InlineKeyboardMarkup:
                 )
             ],
             [InlineKeyboardButton(text=app.content.get("admin.group"), callback_data="ad:group")],
+            [InlineKeyboardButton(text=app.content.get("admin.live"), callback_data="ad:live")],
             [
                 InlineKeyboardButton(
                     text=app.content.get("admin.defaults"), callback_data="ad:defaults"
@@ -92,6 +99,113 @@ async def authorized(callback: CallbackQuery, app: Application) -> User | None:
             await callback.message.answer(app.content.get("admin.denied"))
         return None
     return user
+
+
+@router.callback_query(F.data == "ad:live")
+async def live_lesson_menu(callback: CallbackQuery, app: Application) -> None:
+    await callback.answer()
+    if not callback.message or not await authorized(callback, app):
+        return
+    async with app.sessions() as session:
+        students = (
+            await session.scalars(
+                select(User)
+                .options(selectinload(User.settings))
+                .where(User.role == "student", User.is_active.is_(True))
+                .order_by(User.display_name, User.id)
+            )
+        ).all()
+    if not students:
+        await callback.message.answer(app.content.get("admin.live.empty"))
+        return
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=app.content.get(
+                    "admin.live.stop"
+                    if student.settings and student.settings.live_lesson_enabled
+                    else "admin.live.start",
+                    name=student.display_name,
+                ),
+                callback_data=f"adlive:{student.id}",
+            )
+        ]
+        for student in students
+    ]
+    rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="ad:menu")])
+    current = next(
+        (
+            student.display_name
+            for student in students
+            if student.settings and student.settings.live_lesson_enabled
+        ),
+        None,
+    )
+    text = app.content.get("admin.live.title")
+    if current:
+        text += "\n\n" + app.content.get("admin.live.current", name=escape(current))
+    await callback.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
+
+
+@router.callback_query(F.data.startswith("adlive:"))
+async def toggle_live_lesson(callback: CallbackQuery, app: Application) -> None:
+    await callback.answer()
+    admin = await authorized(callback, app)
+    if not callback.message or not callback.data or not admin:
+        return
+    student_id = int(callback.data.split(":", 1)[1])
+    displaced_chat_ids: list[int] = []
+    async with app.sessions() as session, session.begin():
+        student = await session.scalar(
+            select(User)
+            .options(selectinload(User.settings))
+            .where(User.id == student_id, User.role == "student")
+            .with_for_update()
+        )
+        if not student or not student.settings:
+            return
+        enable = not student.settings.live_lesson_enabled
+        if enable:
+            displaced_chat_ids = list(
+                await session.scalars(
+                    select(User.telegram_chat_id)
+                    .join(StudentSettings, StudentSettings.user_id == User.id)
+                    .where(
+                        StudentSettings.live_lesson_enabled.is_(True),
+                        User.id != student.id,
+                    )
+                )
+            )
+            await session.execute(
+                update(StudentSettings)
+                .where(StudentSettings.user_id != student.id)
+                .values(live_lesson_enabled=False)
+            )
+        student.settings.live_lesson_enabled = enable
+        student.settings.updated_by_user_id = admin.id
+        student_name = student.display_name
+        student_chat_id = student.telegram_chat_id
+        context = dict(student.settings.live_context)
+    for chat_id in displaced_chat_ids:
+        await notify_student_live_status(callback.bot, chat_id, enabled=False)
+    await notify_student_live_status(callback.bot, student_chat_id, enabled=enable)
+    await callback.message.answer(
+        app.content.get(
+            "admin.live.started" if enable else "admin.live.stopped",
+            name=escape(student_name),
+        )
+    )
+    if enable:
+        if context:
+            snapshot = app.content.get(
+                "admin.live.snapshot",
+                title=str(context.get("title", "")),
+                body=str(context.get("body", "")),
+            )
+            for chunk in _message_chunks(snapshot):
+                await callback.message.answer(chunk, parse_mode=None)
+        else:
+            await callback.message.answer(app.content.get("admin.live.waiting"))
 
 
 @router.callback_query(F.data.startswith("ad:students:"))
@@ -184,10 +298,12 @@ async def student_detail(callback: CallbackQuery, app: Application) -> None:
             if student.settings and student.settings.reminders_enabled
             else "Off"
         )
+        live_enabled = bool(student.settings and student.settings.live_lesson_enabled)
     title = app.content.get("admin.student.title", name=student.display_name)
     title += f" — {topic.content(topic.metadata.short_title_key)}"
     text = render_progress(view, title)
     text += f"\n\nReminder: {reminder}"
+    text += "\nЖивой урок: " + ("включён" if live_enabled else "выключен")
     if insights:
         text += "\n\n<b>Teacher observations</b>\n" + "\n".join(
             f"{item.label}: {item.value}" if item.value else item.label for item in insights
@@ -210,6 +326,14 @@ async def student_detail(callback: CallbackQuery, app: Application) -> None:
                 InlineKeyboardButton(
                     text=app.content.get("admin.student.topic"),
                     callback_data=f"adta:{student.id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=app.content.get(
+                        "admin.student.live.stop" if live_enabled else "admin.student.live.start"
+                    ),
+                    callback_data=f"adlive:{student.id}",
                 )
             ],
             [

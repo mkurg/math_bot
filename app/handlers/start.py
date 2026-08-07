@@ -39,7 +39,13 @@ async def start(message: Message, command: CommandObject, app: Application) -> N
                     app.content.get("admin.title"), reply_markup=admin_keyboard(app)
                 )
                 return
-            await show_main_menu(message, app, user.selected_topic_id, "returning")
+            await show_main_menu(
+                message,
+                app,
+                user.selected_topic_id,
+                "returning",
+                user.id,
+            )
             return
         argument = command.args or ""
         valid = argument.startswith("join_") and await app.invitations.validate(

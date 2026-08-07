@@ -13,13 +13,17 @@ from aiogram.types import (
 from app.bot import Application
 from app.handlers.common import actor, callback_actor, send_question
 from app.keyboards.common import table_grid
+from app.services.live_lessons import record_live_event
 from app.services.sessions import next_question, start_session
 
 router = Router(name="practice")
 
 
 async def show_practice(
-    message: Message | InaccessibleMessage, app: Application, topic_id: str
+    message: Message | InaccessibleMessage,
+    app: Application,
+    topic_id: str,
+    student_id: int | None = None,
 ) -> None:
     message = cast(Message, message)
     topic = app.registry.get(topic_id)
@@ -37,6 +41,15 @@ async def show_practice(
     await message.answer(
         topic.content("practice.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
+    if student_id is not None:
+        await record_live_event(
+            message.bot,
+            app,
+            student_id,
+            "practice_menu",
+            "Ученик открыл тренировки",
+            "\n".join(topic.content(mode.title_key) for mode in topic.practice_modes()),
+        )
 
 
 @router.message(Command("practice"))
@@ -45,7 +58,7 @@ async def practice_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if user:
-        await show_practice(message, app, user.selected_topic_id)
+        await show_practice(message, app, user.selected_topic_id, user.id)
     else:
         await message.answer(app.text("invite_required", app.settings.default_topic_id))
 
@@ -58,7 +71,7 @@ async def practice_callback(callback: CallbackQuery, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await callback_actor(session, callback)
     if user:
-        await show_practice(callback.message, app, user.selected_topic_id)
+        await show_practice(callback.message, app, user.selected_topic_id, user.id)
 
 
 @router.callback_query(F.data.startswith("pm:"))

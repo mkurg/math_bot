@@ -7,12 +7,15 @@ from app.bot import Application
 from app.database.models import PracticeSession, Question
 from app.handlers.common import actor, callback_actor, send_question
 from app.keyboards.common import table_grid
+from app.services.live_lessons import record_live_event
 from app.services.sessions import next_question, start_session
 
 router = Router(name="tests")
 
 
-async def show_tests(message: Message, app: Application, topic_id: str) -> None:
+async def show_tests(
+    message: Message, app: Application, topic_id: str, student_id: int | None = None
+) -> None:
     topic = app.registry.get(topic_id)
     rows = [
         [
@@ -28,6 +31,15 @@ async def show_tests(message: Message, app: Application, topic_id: str) -> None:
     await message.answer(
         topic.content("tests.title"), reply_markup=InlineKeyboardMarkup(inline_keyboard=rows)
     )
+    if student_id is not None:
+        await record_live_event(
+            message.bot,
+            app,
+            student_id,
+            "test_menu",
+            "Ученик открыл проверочные",
+            "\n".join(topic.content(item.title_key) for item in topic.test_definitions()),
+        )
 
 
 @router.message(Command("test"))
@@ -36,7 +48,7 @@ async def test_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if user:
-        await show_tests(message, app, user.selected_topic_id)
+        await show_tests(message, app, user.selected_topic_id, user.id)
 
 
 @router.callback_query(F.data.startswith("tm:"))

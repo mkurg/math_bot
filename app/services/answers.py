@@ -49,6 +49,7 @@ class AnswerOutcome:
     session: PracticeSession | None
     source: str
     completed: bool
+    selected_answer: dict[str, Any]
 
 
 async def submit_answer(
@@ -207,7 +208,14 @@ async def _record_answer(
         if delivery:
             delivery.status = "answered"
             delivery.answered_at = now
-    return AnswerOutcome(evaluation, question, practice_session, source, completed)
+    return AnswerOutcome(
+        evaluation,
+        question,
+        practice_session,
+        source,
+        completed,
+        selected,
+    )
 
 
 def _schedule_retry(

@@ -27,6 +27,7 @@ from app.services.privacy import delete_student_data
 from app.services.sessions import independent_question, next_question, start_session
 from app.services.statistics import progress_for_user, topic_group_metrics, user_metrics
 from app.services.users import create_student, ensure_initial_records
+from app.topics.algebraic_expressions import AlgebraicExpressionsModule
 from app.topics.invariants import InvariantsModule
 from app.topics.numeral_systems import NumeralSystemsModule
 from app.topics.times_tables import TimesTablesModule
@@ -53,6 +54,7 @@ def registry(
     with_sample: bool = False,
     with_numeral: bool = False,
     with_invariants: bool = False,
+    with_algebra: bool = False,
 ) -> TopicRegistry:
     result = TopicRegistry()
     result.register(TimesTablesModule())
@@ -66,6 +68,9 @@ def registry(
     if with_invariants:
         result.register(InvariantsModule())
         enabled.append("invariants")
+    if with_algebra:
+        result.register(AlgebraicExpressionsModule())
+        enabled.append("algebraic_expressions")
     result.configure(tuple(enabled), "times_tables")
     return result
 
@@ -329,20 +334,23 @@ async def test_sample_topic_generic_session_and_daily_flow(
 
 
 @pytest.mark.asyncio
-async def test_three_real_topics_are_strictly_isolated_for_sessions_daily_and_progress(
+async def test_four_real_topics_are_strictly_isolated_for_sessions_daily_and_progress(
     db_sessions: async_sessionmaker[AsyncSession],
 ) -> None:
     times_student = await seed_student(db_sessions, telegram_id=701)
     numeral_student = await seed_student(db_sessions, telegram_id=702)
     invariants_student = await seed_student(db_sessions, telegram_id=703)
-    module_registry = registry(with_numeral=True, with_invariants=True)
+    algebra_student = await seed_student(db_sessions, telegram_id=704)
+    module_registry = registry(with_numeral=True, with_invariants=True, with_algebra=True)
     async with db_sessions() as session, session.begin():
         times_user = await session.get(User, times_student.id)
         numeral_user = await session.get(User, numeral_student.id)
         invariants_user = await session.get(User, invariants_student.id)
-        assert times_user and numeral_user and invariants_user
+        algebra_user = await session.get(User, algebra_student.id)
+        assert times_user and numeral_user and invariants_user and algebra_user
         numeral_user.selected_topic_id = "numeral_systems"
         invariants_user.selected_topic_id = "invariants"
+        algebra_user.selected_topic_id = "algebraic_expressions"
 
         times_session = await start_session(
             session, module_registry, times_user, "quick", "practice"
@@ -353,12 +361,17 @@ async def test_three_real_topics_are_strictly_isolated_for_sessions_daily_and_pr
         invariants_session = await start_session(
             session, module_registry, invariants_user, "guided", "practice"
         )
+        algebra_session = await start_session(
+            session, module_registry, algebra_user, "signs", "practice"
+        )
         times_question = await next_question(session, module_registry, times_session)
         numeral_question = await next_question(session, module_registry, numeral_session)
         invariants_question = await next_question(session, module_registry, invariants_session)
+        algebra_question = await next_question(session, module_registry, algebra_session)
         assert times_question and times_question.topic_id == "times_tables"
         assert numeral_question and numeral_question.topic_id == "numeral_systems"
         assert invariants_question and invariants_question.topic_id == "invariants"
+        assert algebra_question and algebra_question.topic_id == "algebraic_expressions"
 
         times_daily, times_daily_question = await prepare_daily_question(
             session, module_registry, times_user
@@ -369,12 +382,17 @@ async def test_three_real_topics_are_strictly_isolated_for_sessions_daily_and_pr
         invariants_daily, invariants_daily_question = await prepare_daily_question(
             session, module_registry, invariants_user
         )
+        algebra_daily, algebra_daily_question = await prepare_daily_question(
+            session, module_registry, algebra_user
+        )
         assert times_daily.topic_id == "times_tables"
         assert times_daily_question and times_daily_question.topic_id == "times_tables"
         assert numeral_daily.topic_id == "numeral_systems"
         assert numeral_daily_question and numeral_daily_question.topic_id == "numeral_systems"
         assert invariants_daily.topic_id == "invariants"
         assert invariants_daily_question and invariants_daily_question.topic_id == "invariants"
+        assert algebra_daily.topic_id == "algebraic_expressions"
+        assert algebra_daily_question and algebra_daily_question.topic_id == "algebraic_expressions"
 
         generated = module_registry.get("numeral_systems").generate_question(
             "hexadecimal:dec_to_hex", "direct_conversion", Random(7)
@@ -403,11 +421,27 @@ async def test_three_real_topics_are_strictly_isolated_for_sessions_daily_and_pr
             invariants_answer,
         )
         assert invariant_outcome.evaluation.is_correct
+        algebra_answer = next(
+            index
+            for index, option in enumerate(algebra_question.options)
+            if option["value"] == algebra_question.correct_answer
+        )
+        algebra_outcome = await submit_answer(
+            session,
+            module_registry,
+            algebra_user,
+            algebra_question.public_id,
+            algebra_answer,
+        )
+        assert algebra_outcome.evaluation.is_correct
         numeral_progress = await progress_for_user(session, module_registry, numeral_user)
         invariants_progress = await progress_for_user(session, module_registry, invariants_user)
+        algebra_progress = await progress_for_user(session, module_registry, algebra_user)
         times_progress = await progress_for_user(session, module_registry, times_user)
         assert numeral_progress.headline_metrics[0].value == "1"
         assert invariants_progress.headline_metrics[0].value == "1"
+        assert algebra_progress.headline_metrics[0].value == "1"
+        assert algebra_progress.headline_metrics[0].label == "Всего ответов"
         assert times_progress.headline_metrics[0].value == "0"
 
         breakdown = await topic_group_metrics(session)
@@ -415,6 +449,7 @@ async def test_three_real_topics_are_strictly_isolated_for_sessions_daily_and_pr
             "times_tables",
             "numeral_systems",
             "invariants",
+            "algebraic_expressions",
         }
 
 

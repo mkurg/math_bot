@@ -12,6 +12,7 @@ from aiogram.types import (
 
 from app.bot import Application
 from app.handlers.common import actor, callback_actor
+from app.services.live_lessons import record_live_event
 
 router = Router(name="settings")
 
@@ -47,13 +48,25 @@ def hour_keyboard(prefix: str = "sh") -> InlineKeyboardMarkup:
 
 
 async def show_settings(
-    message: Message | InaccessibleMessage, app: Application, topic_id: str
+    message: Message | InaccessibleMessage,
+    app: Application,
+    topic_id: str,
+    student_id: int | None = None,
 ) -> None:
     message = cast(Message, message)
     await message.answer(
         app.text("settings.title", topic_id),
         reply_markup=frequency_keyboard(app, topic_id=topic_id),
     )
+    if student_id is not None:
+        await record_live_event(
+            message.bot,
+            app,
+            student_id,
+            "settings",
+            "Ученик открыл настройки",
+            app.text("settings.title", topic_id),
+        )
 
 
 @router.message(Command("settings"))
@@ -62,7 +75,7 @@ async def settings_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if user and user.settings:
-        await show_settings(message, app, user.selected_topic_id)
+        await show_settings(message, app, user.selected_topic_id, user.id)
     elif user:
         await message.answer(app.text("student_only", user.selected_topic_id))
 
@@ -74,7 +87,7 @@ async def settings_callback(callback: CallbackQuery, app: Application) -> None:
         async with app.sessions() as session, session.begin():
             user = await callback_actor(session, callback)
         if user and user.settings:
-            await show_settings(callback.message, app, user.selected_topic_id)
+            await show_settings(callback.message, app, user.selected_topic_id, user.id)
         elif user:
             await callback.message.answer(app.text("student_only", user.selected_topic_id))
 
@@ -103,6 +116,14 @@ async def set_frequency(callback: CallbackQuery, app: Application) -> None:
         await callback.message.answer(
             app.text("settings.hour", topic_id), reply_markup=hour_keyboard()
         )
+    await record_live_event(
+        callback.bot,
+        app,
+        user.id,
+        "settings_change",
+        "Ученик изменил расписание напоминаний",
+        f"Режим: {value}",
+    )
 
 
 @router.callback_query(F.data.startswith("sh:"))
@@ -123,3 +144,11 @@ async def set_hour(callback: CallbackQuery, app: Application) -> None:
         user.settings.local_hour = hour
         user.settings.updated_by_user_id = user.id
     await callback.message.answer(app.text("settings.saved", topic_id))
+    await record_live_event(
+        callback.bot,
+        app,
+        user.id,
+        "settings_change",
+        "Ученик изменил время напоминаний",
+        f"Время: {hour:02d}:00",
+    )

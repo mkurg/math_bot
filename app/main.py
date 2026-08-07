@@ -18,6 +18,7 @@ from app.handlers import build_router
 from app.logging import configure_logging
 from app.services.invitations import InvitationService
 from app.services.users import ensure_initial_records
+from app.topics.algebraic_expressions import AlgebraicExpressionsModule
 from app.topics.invariants import InvariantsModule
 from app.topics.numeral_systems import NumeralSystemsModule
 from app.topics.times_tables import TimesTablesModule
@@ -31,6 +32,7 @@ async def run() -> None:
     registry.register(TimesTablesModule())
     registry.register(NumeralSystemsModule())
     registry.register(InvariantsModule())
+    registry.register(AlgebraicExpressionsModule())
     registry.configure(settings.enabled_topics, settings.default_topic_id)
     content = ContentCatalog(Path(__file__).parent / "content" / "core" / "strings.yaml")
     engine, sessions = create_engine_and_sessionmaker(settings.database_url)

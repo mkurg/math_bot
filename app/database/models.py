@@ -58,6 +58,8 @@ class StudentSettings(Base):
     days_mask: Mapped[str] = mapped_column(String(16), default="DAILY")
     local_hour: Mapped[int] = mapped_column(Integer, default=17)
     timezone: Mapped[str] = mapped_column(String(64), default="Europe/Zurich")
+    live_lesson_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    live_context: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
