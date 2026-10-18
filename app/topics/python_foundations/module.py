@@ -36,6 +36,7 @@ from app.topics.python_foundations.questions import (
     CONCEPTS,
     QUESTION_TYPES,
     STDOUT_SKILLS,
+    plain_answer_segments,
     question_parts,
 )
 from app.topics.python_foundations.russian_tasks import MISCONCEPTION_LABELS
@@ -519,6 +520,10 @@ class PythonFoundationsModule:
         metadata: dict[str, Any] = {
             "hints": list(parts.hints),
             "choice_formats": [parts.answer_formats[index] for index, _ in indexed],
+            "choice_segments": [
+                plain_answer_segments(label) if parts.answer_formats[index] == "plain" else []
+                for index, label in indexed
+            ],
             "misconception": parts.misconception,
             "difficulty_level": parts.difficulty_level,
             "question_format": (

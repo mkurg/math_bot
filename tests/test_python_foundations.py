@@ -30,6 +30,7 @@ from app.topics.python_foundations.russian_tasks import (
     DETAILS,
     EDITS,
     MISCONCEPTION_LABELS,
+    OUTPUT_LABELS,
 )
 from app.topics.python_foundations.skills import GROUP_LABELS, skill_catalogue, skill_label
 
@@ -136,6 +137,16 @@ def test_each_skill_has_three_difficulty_levels_and_evaluable_questions(
                 prompt_payload={"metadata": question.metadata},
                 options=[asdict(option) for option in question.answer_options],
             )
+            for option, answer_format, segments in zip(
+                stored.options,
+                question.metadata["choice_formats"],
+                question.metadata["choice_segments"],
+                strict=True,
+            ):
+                assert answer_format in {"python", "stdout", "plain"}
+                if answer_format == "plain":
+                    assert "".join(segment["text"] for segment in segments) == option["label"]
+                    assert {segment["kind"] for segment in segments} <= {"text", "code"}
             assert len(question.rendered_prompt) + len(answer_choices_text(stored)) + 100 < 4096
             levels.add(int(question.metadata["difficulty_level"]))
             assert module.evaluate_answer(asdict(question), question.correct_answer).is_correct
@@ -166,7 +177,7 @@ def test_all_tasks_have_full_context_and_distinct_edit_exercises() -> None:
         assert "<pre><code" in edit.prompt
 
 
-def test_python_choices_render_as_separate_blocks_with_code_highlighting_only_for_code() -> None:
+def test_python_choices_distinguish_code_stdout_and_plain_answers() -> None:
     module = PythonFoundationsModule()
 
     def rendered(skill_key: str, question_type: str) -> str:
@@ -180,8 +191,13 @@ def test_python_choices_render_as_separate_blocks_with_code_highlighting_only_fo
     output = rendered("PY.EXEC.ORDER", "predict")
     assert output.count("<b>Вариант ") == 4
     assert "<pre>A\nC</pre>" in output
+    assert "<pre>Ничего</pre>" not in output
+    assert "</b>\nНичего" in output
     assert '<code class="language-python">' not in output
     assert "</pre>\n\n<b>Вариант " in output
+    endless = rendered("PY.LOOP.WHILE", "predict")
+    assert "<pre>Цикл не заканчивается</pre>" not in endless
+    assert "</b>\nЦикл не заканчивается" in endless
 
     edit = rendered("PY.IO.PRINT", "apply")
     assert '<pre><code class="language-python">print(&quot;hp&quot;)</code></pre>' in edit
@@ -190,11 +206,27 @@ def test_python_choices_render_as_separate_blocks_with_code_highlighting_only_fo
     mixed = rendered("PY.CLASS.SELF", "apply")
     assert '<pre><code class="language-python">cat1</code></pre>' in mixed
     assert mixed.count('<code class="language-python">') == 1
-    assert mixed.count("<pre>") == 4
+    assert mixed.count("<pre>") == 1
+    assert "класс <code>Cat</code>" in mixed
+
+    instruction = rendered("PY.VAR.UPDATE", "apply")
+    assert "Заменить <code>x = 8</code> на <code>x == 8</code>" in instruction
+    assert "<pre>Заменить" not in instruction
+    multiline = rendered("PY.IF.BASIC", "apply")
+    assert "Добавить <code>else:</code>\n    <code>print(&quot;конец&quot;)</code>" in multiline
+    assert "<pre>Добавить" not in multiline
+    assert "</b>\nУбрать условие" in multiline
+    loop = rendered("PY.LOOP.WHILE", "apply")
+    assert "<code>x &lt;= 3</code>" in loop
+
+    recognition = rendered("PY.FUNC.RETURN", "recognize")
+    assert "<code>return</code>" in recognition
+    assert "<pre>" not in recognition
 
     check = rendered("PY.INDENTATION", "predict")
     assert '<pre><code class="language-python">print(&quot;жив&quot;)</code></pre>' in check
     assert check.count('<code class="language-python">') == 2
+    assert "Обе строки <code>print</code>" in check
 
 
 def test_stdout_questions_are_compiled_executed_and_exact() -> None:
@@ -203,6 +235,11 @@ def test_stdout_questions_are_compiled_executed_and_exact() -> None:
     for skill_key in STDOUT_SKILLS:
         concept = CONCEPTS[skill_key]
         assert concept.stdout_code is not None
+        parts = question_parts(skill_key, "predict")
+        assert all(
+            answer_format == ("plain" if answer in OUTPUT_LABELS.values() else "stdout")
+            for answer, answer_format in zip(parts.answers, parts.answer_formats, strict=True)
+        )
         actual = module._execute_stdout(concept.stdout_code, concept.stdout_inputs)
         assert actual == concept.stdout_expected
         question = module.generate_question(skill_key, "predict", Random(7))

@@ -32,22 +32,47 @@ def answer_choices_text(question: Question) -> str:
         return ""
     metadata = question.prompt_payload.get("metadata", {})
     formats = metadata.get("choice_formats") if isinstance(metadata, dict) else None
+    segments = metadata.get("choice_segments") if isinstance(metadata, dict) else None
     if isinstance(formats, list) and len(formats) == len(question.options):
         choices: list[str] = []
         for index, (option, answer_format) in enumerate(
             zip(question.options, formats, strict=True)
         ):
-            label = escape(str(option["label"]))
+            label = str(option["label"])
             if answer_format == "python":
-                block = f'<pre><code class="language-python">{label}</code></pre>'
+                display = f'<pre><code class="language-python">{escape(label)}</code></pre>'
+            elif answer_format == "stdout":
+                display = f"<pre>{escape(label)}</pre>"
             else:
-                block = f"<pre>{label}</pre>"
-            choices.append(f"<b>Вариант {chr(ord('A') + index)}</b>\n{block}")
+                inline = (
+                    segments[index]
+                    if isinstance(segments, list) and len(segments) == len(question.options)
+                    else None
+                )
+                display = _plain_choice_html(label, inline)
+            choices.append(f"<b>Вариант {chr(ord('A') + index)}</b>\n{display}")
         return "\n\n".join(choices)
     return "\n".join(
         f"<b>{chr(ord('A') + index)}</b>: {escape(str(option['label']))}"
         for index, option in enumerate(question.options)
     )
+
+
+def _plain_choice_html(label: str, segments: object) -> str:
+    if not isinstance(segments, list):
+        return escape(label)
+    rendered: list[str] = []
+    raw: list[str] = []
+    for segment in segments:
+        if not isinstance(segment, dict):
+            return escape(label)
+        kind, value = segment.get("kind"), segment.get("text")
+        if kind not in {"text", "code"} or not isinstance(value, str):
+            return escape(label)
+        raw.append(value)
+        safe = escape(value)
+        rendered.append(f"<code>{safe}</code>" if kind == "code" else safe)
+    return "".join(rendered) if "".join(raw) == label else escape(label)
 
 
 def answer_keyboard(

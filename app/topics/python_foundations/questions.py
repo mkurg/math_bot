@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from html import escape
 
@@ -7,6 +8,7 @@ from app.topics.python_foundations.russian_tasks import (
     CHECKS,
     DETAILS,
     EDITS,
+    OUTPUT_LABELS,
     localized_output_answers,
 )
 
@@ -42,6 +44,119 @@ class QuestionParts:
 
 def code_block(code: str) -> str:
     return f'<pre><code class="language-python">{escape(code)}</code></pre>'
+
+
+_INLINE_CODE_FRAGMENTS = (
+    "while p1.hp > 0 and p2.hp > 0:",
+    "if shield == 0:",
+    "if x == 4: break",
+    "elif hp > 0:",
+    "p1.attack(p2)",
+    'print("без щита")',
+    'print("конец")',
+    'print("жив")',
+    "print(x * 2)",
+    "return x * 2",
+    "p1.iniciativa",
+    "p2.iniciativa",
+    "self.weapon",
+    "range(3)",
+    "range(4)",
+    "range(2)",
+    "double(5)",
+    "print(x)",
+    "print(y)",
+    "print(a)",
+    "int()",
+    "randint(a, b)",
+    ".items()",
+    "x == 8",
+    "x = 8",
+    "y = x",
+    "hp > 50",
+    "hp > 0",
+    "shield = 0",
+    "x <= 3",
+    "x <= 2",
+    "x += 1",
+    "x == 4",
+    "x = 1",
+    "p1.hp",
+    "p2.hp",
+    "__init__",
+    "choose_attack",
+    "choice",
+    "defense",
+    "weapon",
+    "attack",
+    "Player",
+    "cat1",
+    "cat2",
+    "Cat",
+    "hello",
+    "pass",
+    "show",
+    "heal",
+    "hit",
+    "self",
+    "other",
+    "print",
+    "input",
+    "return",
+    "break",
+    "import",
+    "class",
+    "while",
+    "range",
+    "float",
+    "bool",
+    "tuple",
+    "list",
+    "dict",
+    "int",
+    "str",
+    "True",
+    "False",
+    "None",
+    "else:",
+    "elif",
+    "else",
+    "and",
+    "or",
+    "for",
+    "def",
+    "if",
+    "hp",
+    "p1",
+    "p2",
+    "x",
+    "y",
+    "==",
+    ">",
+    "=",
+    "%",
+)
+_INLINE_CODE_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9_])(?:"
+    + "|".join(
+        re.escape(fragment) for fragment in sorted(_INLINE_CODE_FRAGMENTS, key=len, reverse=True)
+    )
+    + r")(?![A-Za-z0-9_])"
+)
+
+
+def plain_answer_segments(answer: str) -> list[dict[str, str]]:
+    """Mark only code fragments within an otherwise natural-language answer."""
+    segments: list[dict[str, str]] = []
+    previous = 0
+    for match in _INLINE_CODE_PATTERN.finditer(answer):
+        if match.start() > previous:
+            segments.append({"kind": "text", "text": answer[previous : match.start()]})
+        segments.append({"kind": "code", "text": match.group()})
+        previous = match.end()
+    if previous < len(answer) or not segments:
+        segments.append({"kind": "text", "text": answer[previous:]})
+    return segments
 
 
 def _q(
@@ -743,7 +858,9 @@ def question_parts(skill_key: str, question_type: str) -> QuestionParts:
                 input_note = f"\nВвод пользователя: {values}."
             prompt = f"Что точно выведет программа?{input_note}\n\n{code_block(code)}"
             answers = localized_output_answers(concept.check_answers)
-            answer_formats = ("plain",) * 4
+            answer_formats = tuple(
+                "plain" if answer in OUTPUT_LABELS.values() else "stdout" for answer in answers
+            )
         return QuestionParts(
             prompt=prompt,
             answers=answers,
