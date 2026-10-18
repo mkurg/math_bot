@@ -6,12 +6,15 @@ A private, invitation-only Telegram bot with five isolated learning modules:
 - **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation, with three progressive difficulty tiers;
 - **Invariants — What Refuses to Change?** — an eight-part theory sequence and adaptive practice on parity, remainders, checking every allowed move, impossibility proofs, reachability constructions, evidence versus proof, stronger invariants, and the odd part of a number.
 - **Скобки, распределительный закон и подобные слагаемые** — полностью русская последовательность теории и адаптивной практики: части выражения, знаки перед скобками, распределение множителя, коэффициенты, подобные слагаемые и многошаговое упрощение.
-- **Python Foundations & Fighting Game** — an English, execution-first path from variables, exact stdout, conditions, loops, functions, collections, and classes into nine focused labs for tracing, debugging, and modifying the existing Fighting program.
+- **Основы Python и игра Fighting** — русскоязычный маршрут от выполнения первых строк до девяти игровых лабораторных работ и самостоятельной доработки критического удара. Вопросы показывают полный фрагмент кода, а тренировки и проверки идут от простого к сложному без повторения навыка в одной сессии.
 
 Each student has one active assigned module. Menus, practice, challenges/tests, learning
 material, daily questions, mastery, and progress resolve through that assignment. The
 teacher sees students from all modules and may change an individual assignment without
 mixing historical topic data.
+To try assignments on the teacher's own Telegram account, open `/admin` → **🧪 Мои задания**
+and choose a module. The teacher keeps the admin role; their attempts and mastery are stored
+separately from students. Use the **👩‍🏫 Инструменты учителя** button or `/admin` to return.
 
 Long multiple-choice answers are printed in full below the question and selected with compact A/B/C/D buttons, avoiding Telegram's non-wrapping button-label limit. Numeral-systems Tier 1 teaches foundations without decimal conversion drills, Tier 2 uses small single-group binary↔octal/hexadecimal mappings, and Tier 3 retains the original complete difficulty.
 

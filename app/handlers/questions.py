@@ -368,7 +368,13 @@ async def next_answer(callback: CallbackQuery, app: Application) -> None:
     if question:
         await send_question(callback.bot, callback.message, app, question, practice_session)
     else:
-        await show_main_menu(callback.message, app, user.selected_topic_id, student_id=user.id)
+        await show_main_menu(
+            callback.message,
+            app,
+            user.selected_topic_id,
+            student_id=user.id,
+            teacher_mode=user.role == "admin" and user.study_mode,
+        )
 
 
 @router.callback_query(F.data.regexp(r"^dps:[A-Za-z0-9_-]{4,16}$"))

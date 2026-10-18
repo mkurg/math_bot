@@ -31,7 +31,7 @@ async def start(message: Message, command: CommandObject, app: Application) -> N
                 message.from_user.first_name,
                 message.from_user.username,
             )
-            if user.role == "admin":
+            if user.role == "admin" and not user.study_mode:
                 from app.handlers.admin import admin_keyboard
 
                 await message.answer("Teacher profile", reply_markup=ReplyKeyboardRemove())
@@ -45,6 +45,7 @@ async def start(message: Message, command: CommandObject, app: Application) -> N
                 user.selected_topic_id,
                 "returning",
                 user.id,
+                teacher_mode=user.role == "admin",
             )
             return
         argument = command.args or ""

@@ -12,6 +12,7 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
+    ReplyKeyboardRemove,
 )
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import selectinload
@@ -25,7 +26,7 @@ from app.database.models import (
     StudentSettings,
     User,
 )
-from app.handlers.common import actor, callback_actor
+from app.handlers.common import actor, callback_actor, show_main_menu
 from app.handlers.progress import render_progress
 from app.handlers.settings import FREQUENCIES
 from app.services.live_lessons import notify_student_live_status
@@ -54,6 +55,7 @@ def admin_keyboard(app: Application) -> InlineKeyboardMarkup:
                 )
             ],
             [InlineKeyboardButton(text=app.content.get("admin.group"), callback_data="ad:group")],
+            [InlineKeyboardButton(text=app.content.get("admin.self"), callback_data="ad:self")],
             [InlineKeyboardButton(text=app.content.get("admin.live"), callback_data="ad:live")],
             [
                 InlineKeyboardButton(
@@ -76,16 +78,33 @@ def is_admin(user: User | None, app: Application) -> bool:
 async def admin_menu(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
+        was_studying = bool(user and is_admin(user, app) and user.study_mode)
+        if is_admin(user, app):
+            assert user is not None
+            user.study_mode = False
     if not is_admin(user, app):
         await message.answer(app.content.get("admin.denied"))
         return
+    if was_studying:
+        await message.answer(
+            app.content.get("admin.self.exited"), reply_markup=ReplyKeyboardRemove()
+        )
     await message.answer(app.content.get("admin.title"), reply_markup=admin_keyboard(app))
 
 
 @router.callback_query(F.data == "ad:menu")
 async def admin_menu_callback(callback: CallbackQuery, app: Application) -> None:
     await callback.answer()
-    if callback.message:
+    if callback.message and await authorized(callback, app):
+        async with app.sessions() as session, session.begin():
+            user = await callback_actor(session, callback)
+            was_studying = bool(user and user.study_mode)
+            if user:
+                user.study_mode = False
+        if was_studying:
+            await callback.message.answer(
+                app.content.get("admin.self.exited"), reply_markup=ReplyKeyboardRemove()
+            )
         await callback.message.answer(
             app.content.get("admin.title"), reply_markup=admin_keyboard(app)
         )
@@ -99,6 +118,96 @@ async def authorized(callback: CallbackQuery, app: Application) -> User | None:
             await callback.message.answer(app.content.get("admin.denied"))
         return None
     return user
+
+
+@router.callback_query(F.data == "ad:self")
+async def self_topic_menu(callback: CallbackQuery, app: Application) -> None:
+    await callback.answer()
+    admin = await authorized(callback, app)
+    if not callback.message or not admin:
+        return
+    topics = app.registry.enabled_topics()
+    rows = [
+        [
+            InlineKeyboardButton(
+                text=(
+                    f"✓ {topic.content(topic.metadata.title_key)}"
+                    if topic.metadata.topic_id == admin.selected_topic_id
+                    else topic.content(topic.metadata.title_key)
+                ),
+                callback_data=f"adself:{index}",
+            )
+        ]
+        for index, topic in enumerate(topics)
+    ]
+    rows.append([InlineKeyboardButton(text=app.content.get("menu.back"), callback_data="ad:menu")])
+    await callback.message.answer(
+        app.content.get("admin.self.choose"),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
+    )
+
+
+@router.callback_query(F.data.startswith("adself:"))
+async def choose_self_topic(callback: CallbackQuery, app: Application) -> None:
+    await callback.answer()
+    admin = await authorized(callback, app)
+    if not callback.message or not callback.data or not admin:
+        return
+    topics = app.registry.enabled_topics()
+    try:
+        index = int(callback.data.split(":", 1)[1])
+    except ValueError:
+        return
+    if not 0 <= index < len(topics):
+        return
+    topic_id = topics[index].metadata.topic_id
+    async with app.sessions() as session, session.begin():
+        own_user = await session.get(User, admin.id, with_for_update=True)
+        if not own_user or not is_admin(own_user, app):
+            return
+        defaults = await session.get(ClassSettings, 1)
+        if defaults is None:
+            raise RuntimeError("class settings have not been initialized")
+        if await session.get(StudentSettings, own_user.id) is None:
+            session.add(
+                StudentSettings(
+                    user_id=own_user.id,
+                    reminders_enabled=False,
+                    days_mask="OFF",
+                    local_hour=defaults.default_local_hour,
+                    timezone=defaults.timezone,
+                )
+            )
+        if own_user.selected_topic_id != topic_id:
+            now = datetime.now(UTC)
+            await session.execute(
+                update(PracticeSession)
+                .where(
+                    PracticeSession.user_id == own_user.id,
+                    PracticeSession.status == "active",
+                )
+                .values(status="abandoned", completed_at=now)
+            )
+            await session.execute(
+                update(Question)
+                .where(Question.user_id == own_user.id, Question.status == "pending")
+                .values(status="expired")
+            )
+            await session.execute(
+                delete(DailyDelivery).where(
+                    DailyDelivery.user_id == own_user.id,
+                    DailyDelivery.status.in_(("pending", "sent", "failed")),
+                )
+            )
+            own_user.selected_topic_id = topic_id
+        own_user.study_mode = True
+    await show_main_menu(
+        callback.message,
+        app,
+        topic_id,
+        student_id=admin.id,
+        teacher_mode=True,
+    )
 
 
 @router.callback_query(F.data == "ad:live")

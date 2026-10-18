@@ -30,6 +30,7 @@ from app.services.users import create_student, ensure_initial_records
 from app.topics.algebraic_expressions import AlgebraicExpressionsModule
 from app.topics.invariants import InvariantsModule
 from app.topics.numeral_systems import NumeralSystemsModule
+from app.topics.python_foundations import PythonFoundationsModule
 from app.topics.times_tables import TimesTablesModule
 from app.topics.times_tables.skills import parse_skill_key
 from app.workers.daily_questions import deliver_due
@@ -55,6 +56,7 @@ def registry(
     with_numeral: bool = False,
     with_invariants: bool = False,
     with_algebra: bool = False,
+    with_python: bool = False,
 ) -> TopicRegistry:
     result = TopicRegistry()
     result.register(TimesTablesModule())
@@ -71,6 +73,9 @@ def registry(
     if with_algebra:
         result.register(AlgebraicExpressionsModule())
         enabled.append("algebraic_expressions")
+    if with_python:
+        result.register(PythonFoundationsModule())
+        enabled.append("python_foundations")
     result.configure(tuple(enabled), "times_tables")
     return result
 

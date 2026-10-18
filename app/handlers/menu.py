@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from app.bot import Application
 from app.handlers.common import actor, callback_actor, show_main_menu
-from app.keyboards.common import main_menu_action
+from app.keyboards.common import TEACHER_MENU_LABEL, main_menu_action
 
 router = Router(name="menu")
 
@@ -14,13 +14,19 @@ async def menu_command(message: Message, app: Application) -> None:
     async with app.sessions() as session, session.begin():
         user = await actor(session, message)
     if user:
-        if user.role == "admin":
+        if user.role == "admin" and not user.study_mode:
             from app.handlers.admin import admin_keyboard
 
             await message.answer("Teacher profile", reply_markup=ReplyKeyboardRemove())
             await message.answer(app.content.get("admin.title"), reply_markup=admin_keyboard(app))
             return
-        await show_main_menu(message, app, user.selected_topic_id, student_id=user.id)
+        await show_main_menu(
+            message,
+            app,
+            user.selected_topic_id,
+            student_id=user.id,
+            teacher_mode=user.role == "admin",
+        )
     else:
         await message.answer(app.text("invite_required", app.settings.default_topic_id))
 
@@ -32,14 +38,20 @@ async def menu_callback(callback: CallbackQuery, app: Application) -> None:
         async with app.sessions() as session, session.begin():
             user = await callback_actor(session, callback)
         if user:
-            if user.role == "admin":
+            if user.role == "admin" and not user.study_mode:
                 from app.handlers.admin import admin_keyboard
 
                 await callback.message.answer(
                     app.content.get("admin.title"), reply_markup=admin_keyboard(app)
                 )
                 return
-            await show_main_menu(callback.message, app, user.selected_topic_id, student_id=user.id)
+            await show_main_menu(
+                callback.message,
+                app,
+                user.selected_topic_id,
+                student_id=user.id,
+                teacher_mode=user.role == "admin",
+            )
 
 
 @router.message(Command("help"))
@@ -56,7 +68,12 @@ async def unexpected_text(message: Message, app: Application) -> None:
     if not user:
         await message.answer(app.text("invite_required", app.settings.default_topic_id))
         return
-    if user.role == "admin":
+    if user.role == "admin" and message.text == TEACHER_MENU_LABEL:
+        from app.handlers.admin import admin_menu
+
+        await admin_menu(message, app)
+        return
+    if user.role == "admin" and not user.study_mode:
         from app.handlers.admin import admin_keyboard
 
         await message.answer("Teacher profile", reply_markup=ReplyKeyboardRemove())
@@ -94,4 +111,10 @@ async def unexpected_text(message: Message, app: Application) -> None:
         await settings_menu(message, app)
         return
     await message.answer(app.text("use_buttons", user.selected_topic_id))
-    await show_main_menu(message, app, user.selected_topic_id, student_id=user.id)
+    await show_main_menu(
+        message,
+        app,
+        user.selected_topic_id,
+        student_id=user.id,
+        teacher_mode=user.role == "admin",
+    )

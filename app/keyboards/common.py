@@ -16,6 +16,8 @@ MAIN_MENU_ITEMS = (
     ("settings", "menu.settings"),
 )
 
+TEACHER_MENU_LABEL = "👩‍🏫 Инструменты учителя"
+
 
 def main_menu_action(topic: TopicModule, text: str) -> str | None:
     for action, content_key in MAIN_MENU_ITEMS:
@@ -24,12 +26,14 @@ def main_menu_action(topic: TopicModule, text: str) -> str | None:
     return None
 
 
-def main_menu(topic: TopicModule) -> ReplyKeyboardMarkup:
-    rows = (
+def main_menu(topic: TopicModule, *, teacher_mode: bool = False) -> ReplyKeyboardMarkup:
+    rows: list[tuple[str, ...]] = [
         (topic.content("menu.practice"), topic.content("menu.learn")),
         (topic.content("menu.tests"), topic.content("menu.daily")),
         (topic.content("menu.progress"), topic.content("menu.settings")),
-    )
+    ]
+    if teacher_mode:
+        rows.append((TEACHER_MENU_LABEL,))
     return ReplyKeyboardMarkup(
         keyboard=[[KeyboardButton(text=label) for label in row] for row in rows],
         resize_keyboard=True,

@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError, TelegramForbiddenError, TelegramRetryAfter
 from aiogram.types import BufferedInputFile
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.bot import Application
@@ -40,7 +40,13 @@ async def deliver_due(bot: Bot, app: Application, now: datetime | None = None) -
             await session.scalars(
                 select(User)
                 .options(selectinload(User.settings))
-                .where(User.role == "student", User.is_active.is_(True))
+                .where(
+                    or_(
+                        User.role == "student",
+                        and_(User.role == "admin", User.study_mode.is_(True)),
+                    ),
+                    User.is_active.is_(True),
+                )
             )
         ).all()
     due = []

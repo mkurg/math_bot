@@ -8,7 +8,7 @@ from app.config import Settings
 from app.content.loader import ContentCatalog
 from app.core.topics.contracts import Metric, ProgressGroup, ProgressItem, TopicProgressView
 from app.handlers.progress import render_progress
-from app.keyboards.common import main_menu, main_menu_action, table_grid
+from app.keyboards.common import TEACHER_MENU_LABEL, main_menu, main_menu_action, table_grid
 from app.services.question_formatting import render_question_prompt
 from app.topics.python_foundations import PythonFoundationsModule
 from app.topics.times_tables import TimesTablesModule
@@ -49,6 +49,8 @@ def test_content_catalog_and_keyboards() -> None:
     menu = main_menu(TimesTablesModule())
     assert len(menu.keyboard) == 3
     assert menu.keyboard[0][0].text == "▶️ Тренировка"
+    teacher_menu = main_menu(TimesTablesModule(), teacher_mode=True)
+    assert teacher_menu.keyboard[-1][0].text == TEACHER_MENU_LABEL
     grid = table_grid("table")
     assert len(grid.inline_keyboard) == 3
     assert grid.inline_keyboard[0][0].callback_data == "table:1"

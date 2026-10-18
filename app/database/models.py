@@ -32,6 +32,7 @@ class User(TimestampMixin, Base):
     display_name: Mapped[str] = mapped_column(String(128))
     telegram_username: Mapped[str | None] = mapped_column(String(64))
     selected_topic_id: Mapped[str] = mapped_column(String(64))
+    study_mode: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_seen_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False

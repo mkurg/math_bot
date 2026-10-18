@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.bot import Application
 from app.content.loader import ContentCatalog
-from app.database.models import PracticeSession, Question, User
+from app.database.models import PracticeSession, Question, StudentSettings, User
 from app.handlers import (
     admin,
     daily,
@@ -26,6 +26,7 @@ from app.handlers import (
     settings,
 )
 from app.handlers import tests as test_handlers
+from app.keyboards.common import TEACHER_MENU_LABEL
 from app.services.invitations import InvitationService
 from app.services.sessions import independent_question
 from tests.test_integration import registry, seed_student
@@ -72,12 +73,17 @@ def make_app(
     *,
     with_numeral: bool = False,
     with_algebra: bool = False,
+    with_python: bool = False,
 ) -> Application:
     configured = integration_settings()
     return Application(
         configured,
         maker,
-        registry(with_numeral=with_numeral, with_algebra=with_algebra),
+        registry(
+            with_numeral=with_numeral,
+            with_algebra=with_algebra,
+            with_python=with_python,
+        ),
         ContentCatalog(Path(__file__).parents[1] / "app" / "content" / "core" / "strings.yaml"),
         InvitationService(configured.bot_token, configured.bot_username),
     )
@@ -448,4 +454,55 @@ async def test_russian_algebra_theory_reply_button_opens_all_units(
     ]
 
     await learning.learning_unit(fake_callback(message, "lu:0", student.telegram_user_id, bot), app)
-    assert "Из чего состоит выражение" in cast(AsyncMock, message.answer).await_args.args[0]
+    learning_response = cast(AsyncMock, message.answer).await_args
+    assert learning_response is not None
+    assert "Из чего состоит выражение" in learning_response.args[0]
+
+
+@pytest.mark.asyncio
+async def test_teacher_can_assign_python_to_self_and_practice_without_losing_admin_role(
+    db_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    await seed_student(db_sessions, telegram_id=410)
+    app = make_app(db_sessions, with_python=True)
+    telegram_id = integration_settings().admin_telegram_id
+    bot = AsyncMock()
+    message = fake_message(telegram_id, bot)
+
+    await admin.self_topic_menu(fake_callback(message, "ad:self", telegram_id, bot), app)
+    self_menu_response = cast(AsyncMock, message.answer).await_args
+    assert self_menu_response is not None
+    chooser = self_menu_response.kwargs["reply_markup"]
+    assert chooser.inline_keyboard[1][0].callback_data == "adself:1"
+
+    await admin.choose_self_topic(fake_callback(message, "adself:1", telegram_id, bot), app)
+    async with db_sessions() as session:
+        own_user = await session.scalar(select(User).where(User.telegram_user_id == telegram_id))
+        assert own_user and own_user.role == "admin"
+        assert own_user.study_mode and own_user.selected_topic_id == "python_foundations"
+        own_id = own_user.id
+        own_settings = await session.get(StudentSettings, own_id)
+        assert own_settings is not None
+        assert not own_settings.reminders_enabled
+    own_menu_response = cast(AsyncMock, message.answer).await_args
+    assert own_menu_response is not None
+    own_menu = own_menu_response.kwargs["reply_markup"]
+    assert own_menu.keyboard[-1][0].text == TEACHER_MENU_LABEL
+
+    cast(SimpleNamespace, message).text = "▶️ Практика Python"
+    await menu.unexpected_text(message, app)
+    practice_response = cast(AsyncMock, message.answer).await_args
+    assert practice_response is not None
+    assert practice_response.args[0] == app.text("practice.title", "python_foundations")
+    await practice.choose_mode(fake_callback(message, "pm:diagnostic", telegram_id, bot), app)
+    async with db_sessions() as session:
+        own_question = await session.scalar(
+            select(Question).where(Question.user_id == own_id, Question.status == "pending")
+        )
+        assert own_question and own_question.topic_id == "python_foundations"
+
+    await admin.admin_menu(message, app)
+    async with db_sessions() as session:
+        own_user = await session.get(User, own_id)
+        assert own_user and own_user.role == "admin" and not own_user.study_mode
+        assert own_user.selected_topic_id == "python_foundations"

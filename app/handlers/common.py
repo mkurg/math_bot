@@ -56,10 +56,13 @@ async def show_main_menu(
     topic_id: str,
     text_key: str = "main_menu",
     student_id: int | None = None,
+    teacher_mode: bool = False,
 ) -> None:
     message = cast(Message, message)
     topic = app.registry.get(topic_id)
-    await message.answer(app.text(text_key, topic_id), reply_markup=main_menu(topic))
+    await message.answer(
+        app.text(text_key, topic_id), reply_markup=main_menu(topic, teacher_mode=teacher_mode)
+    )
     if student_id is not None:
         await record_live_event(
             message.bot,

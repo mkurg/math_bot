@@ -17,7 +17,8 @@ async def daily_task(message: Message, app: Application) -> None:
         user = await actor(session, message)
         if not user:
             return
-        if user.role != "student" or not user.settings:
+        can_study = user.role == "student" or (user.role == "admin" and user.study_mode)
+        if not can_study or not user.settings:
             await message.answer(app.text("student_only", user.selected_topic_id))
             return
         delivery, question = await prepare_daily_question(
@@ -42,7 +43,8 @@ async def one_more(callback: CallbackQuery, app: Application) -> None:
         user = await callback_actor(session, callback)
         if not user:
             return
-        if user.role != "student" or not user.settings:
+        can_study = user.role == "student" or (user.role == "admin" and user.study_mode)
+        if not can_study or not user.settings:
             await callback.message.answer(app.text("student_only", user.selected_topic_id))
             return
         practice_session = await start_session(
