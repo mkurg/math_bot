@@ -34,6 +34,7 @@ class QuestionParts:
     hints: tuple[str, ...]
     misconception: str
     difficulty_level: int
+    answer_formats: tuple[str, ...] = ("plain",) * 4
     stdout_code: str | None = None
     stdout_inputs: tuple[str, ...] = ()
     stdout_expected: str | None = None
@@ -731,6 +732,10 @@ def question_parts(skill_key: str, question_type: str) -> QuestionParts:
             assert check is not None
             prompt = f"{check.question}\n\n{code_block(check.code)}"
             answers = check.answers
+            answer_formats = tuple(
+                "python" if answer[:1].isascii() and "(" in answer else "plain"
+                for answer in answers
+            )
         else:
             input_note = ""
             if concept.stdout_inputs:
@@ -738,6 +743,7 @@ def question_parts(skill_key: str, question_type: str) -> QuestionParts:
                 input_note = f"\nВвод пользователя: {values}."
             prompt = f"Что точно выведет программа?{input_note}\n\n{code_block(code)}"
             answers = localized_output_answers(concept.check_answers)
+            answer_formats = ("plain",) * 4
         return QuestionParts(
             prompt=prompt,
             answers=answers,
@@ -745,12 +751,14 @@ def question_parts(skill_key: str, question_type: str) -> QuestionParts:
             hints=(hint, rule, explanation),
             misconception=concept.misconception,
             difficulty_level=2,
+            answer_formats=answer_formats,
             stdout_code=concept.stdout_code,
             stdout_inputs=concept.stdout_inputs,
             stdout_expected=concept.stdout_expected,
         )
     if question_type == "apply":
         edit = EDITS[skill_key]
+        # Bare code snippets start with ASCII in this corpus; Russian action phrases do not.
         return QuestionParts(
             prompt=f"{edit.question}\n\n{code_block(edit.code)}",
             answers=edit.answers,
@@ -758,5 +766,8 @@ def question_parts(skill_key: str, question_type: str) -> QuestionParts:
             hints=(hint, rule, explanation),
             misconception=concept.misconception,
             difficulty_level=3,
+            answer_formats=tuple(
+                "python" if answer[:1].isascii() else "plain" for answer in edit.answers
+            ),
         )
     raise ValueError(f"unsupported question type: {question_type}")

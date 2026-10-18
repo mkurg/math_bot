@@ -518,6 +518,7 @@ class PythonFoundationsModule:
         validate_options("single_choice", options)
         metadata: dict[str, Any] = {
             "hints": list(parts.hints),
+            "choice_formats": [parts.answer_formats[index] for index, _ in indexed],
             "misconception": parts.misconception,
             "difficulty_level": parts.difficulty_level,
             "question_format": (

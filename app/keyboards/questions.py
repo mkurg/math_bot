@@ -30,6 +30,20 @@ DEFAULT_LABELS = {
 def answer_choices_text(question: Question) -> str:
     if not question.options:
         return ""
+    metadata = question.prompt_payload.get("metadata", {})
+    formats = metadata.get("choice_formats") if isinstance(metadata, dict) else None
+    if isinstance(formats, list) and len(formats) == len(question.options):
+        choices: list[str] = []
+        for index, (option, answer_format) in enumerate(
+            zip(question.options, formats, strict=True)
+        ):
+            label = escape(str(option["label"]))
+            if answer_format == "python":
+                block = f'<pre><code class="language-python">{label}</code></pre>'
+            else:
+                block = f"<pre>{label}</pre>"
+            choices.append(f"<b>Вариант {chr(ord('A') + index)}</b>\n{block}")
+        return "\n\n".join(choices)
     return "\n".join(
         f"<b>{chr(ord('A') + index)}</b>: {escape(str(option['label']))}"
         for index, option in enumerate(question.options)

@@ -10,6 +10,8 @@ import pytest
 
 from app.core.questions.answer_modes import validate_options
 from app.core.topics.contracts import MasteryState
+from app.database.models import Question
+from app.keyboards.questions import answer_choices_text
 from app.topics.python_foundations import PythonFoundationsModule
 from app.topics.python_foundations.lessons import LESSON_CODE
 from app.topics.python_foundations.module import (
@@ -130,6 +132,11 @@ def test_each_skill_has_three_difficulty_levels_and_evaluable_questions(
             assert question.metadata["prompt_format"] == "html"
             assert re.search(r"[А-Яа-яЁё]", question.rendered_prompt.split("<pre>")[0])
             assert re.search(r"[А-Яа-яЁё]", question.explanation_payload["explanation"])
+            stored = Question(
+                prompt_payload={"metadata": question.metadata},
+                options=[asdict(option) for option in question.answer_options],
+            )
+            assert len(question.rendered_prompt) + len(answer_choices_text(stored)) + 100 < 4096
             levels.add(int(question.metadata["difficulty_level"]))
             assert module.evaluate_answer(asdict(question), question.correct_answer).is_correct
             wrong = next(
@@ -157,6 +164,37 @@ def test_all_tasks_have_full_context_and_distinct_edit_exercises() -> None:
         assert prediction.answers != edit.answers
         assert "<pre><code" in prediction.prompt
         assert "<pre><code" in edit.prompt
+
+
+def test_python_choices_render_as_separate_blocks_with_code_highlighting_only_for_code() -> None:
+    module = PythonFoundationsModule()
+
+    def rendered(skill_key: str, question_type: str) -> str:
+        generated = module.generate_question(skill_key, question_type, Random(7))
+        stored = Question(
+            prompt_payload={"metadata": generated.metadata},
+            options=[asdict(option) for option in generated.answer_options],
+        )
+        return answer_choices_text(stored)
+
+    output = rendered("PY.EXEC.ORDER", "predict")
+    assert output.count("<b>Вариант ") == 4
+    assert "<pre>A\nC</pre>" in output
+    assert '<code class="language-python">' not in output
+    assert "</pre>\n\n<b>Вариант " in output
+
+    edit = rendered("PY.IO.PRINT", "apply")
+    assert '<pre><code class="language-python">print(&quot;hp&quot;)</code></pre>' in edit
+    assert edit.count('<code class="language-python">') == 4
+
+    mixed = rendered("PY.CLASS.SELF", "apply")
+    assert '<pre><code class="language-python">cat1</code></pre>' in mixed
+    assert mixed.count('<code class="language-python">') == 1
+    assert mixed.count("<pre>") == 4
+
+    check = rendered("PY.INDENTATION", "predict")
+    assert '<pre><code class="language-python">print(&quot;жив&quot;)</code></pre>' in check
+    assert check.count('<code class="language-python">') == 2
 
 
 def test_stdout_questions_are_compiled_executed_and_exact() -> None:
