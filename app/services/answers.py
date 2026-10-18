@@ -184,6 +184,23 @@ async def _record_answer(
         formats = [str(item) for item in topic_state.get("correct_formats", [])]
         formats.append(question.question_type)
         topic_state["correct_formats"] = formats[-6:]
+    question_format = str(
+        question.prompt_payload.get("metadata", {}).get("question_format", question.question_type)
+    )[:32]
+    format_results = {
+        str(label): {
+            "attempts": int(dict(result).get("attempts", 0)),
+            "correct": int(dict(result).get("correct", 0)),
+        }
+        for label, result in dict(topic_state.get("format_results", {})).items()
+    }
+    current_format = format_results.get(question_format, {"attempts": 0, "correct": 0})
+    current_format["attempts"] = min(10_000, current_format["attempts"] + 1)
+    current_format["correct"] = min(
+        current_format["attempts"], current_format["correct"] + int(evaluation.is_correct)
+    )
+    format_results[question_format] = current_format
+    topic_state["format_results"] = dict(list(format_results.items())[-8:])
     misconception = evaluation.feedback_payload.get("misconception")
     if not evaluation.is_correct and isinstance(misconception, str) and misconception:
         misconception_counts = dict(topic_state.get("misconceptions", {}))

@@ -21,6 +21,7 @@ from app.services.users import ensure_initial_records
 from app.topics.algebraic_expressions import AlgebraicExpressionsModule
 from app.topics.invariants import InvariantsModule
 from app.topics.numeral_systems import NumeralSystemsModule
+from app.topics.python_foundations import PythonFoundationsModule
 from app.topics.times_tables import TimesTablesModule
 from app.workers.daily_questions import run_daily_worker
 
@@ -33,6 +34,7 @@ async def run() -> None:
     registry.register(NumeralSystemsModule())
     registry.register(InvariantsModule())
     registry.register(AlgebraicExpressionsModule())
+    registry.register(PythonFoundationsModule())
     registry.configure(settings.enabled_topics, settings.default_topic_id)
     content = ContentCatalog(Path(__file__).parent / "content" / "core" / "strings.yaml")
     engine, sessions = create_engine_and_sessionmaker(settings.database_url)

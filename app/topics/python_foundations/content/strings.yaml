@@ -1,0 +1,233 @@
+topic.title: "Python Foundations & Fighting Game"
+topic.short_title: "Python & Fighting"
+topic.description: "Rebuild Python execution, then trace, debug, and modify the Fighting game."
+
+menu.practice: "▶️ Practice Python"
+menu.learn: "📚 Learn Python"
+menu.tests: "🎯 Challenges"
+menu.daily: "☀️ Daily task"
+menu.progress: "📊 My progress"
+menu.settings: "⚙️ Settings"
+menu.back: "Back"
+practice.title: "Choose a Python practice mode:"
+tests.title: "Choose a challenge:"
+learn.title: "Learn in order, or revisit one small idea:"
+learn.practice: "Check this idea now"
+learn.cycle: "Predict → Run → Explain → Modify"
+
+mode.diagnostic: "🩺 Diagnostic — 12 questions"
+mode.diagnostic.description: "Find what you remember before rebuilding the foundations."
+mode.quick: "🌱 Quick Practice — 6 questions"
+mode.quick.description: "Adaptive practice on the next useful prerequisites."
+mode.predict_output: "🖥 Predict the Output — 8 questions"
+mode.predict_output.description: "Predict exact, machine-checked Python output."
+mode.trace_program: "🔎 Trace the Program — 8 questions"
+mode.trace_program.description: "Follow values, branches, loops, calls, and object state."
+mode.fix_bug: "🪲 Fix the Bug — 8 questions"
+mode.fix_bug.description: "Diagnose one conceptual or logic mistake at a time."
+mode.mini_script: "⌨️ Write a Mini Script — 6 questions"
+mode.mini_script.description: "Choose and assemble the line or small function that solves a task."
+mode.fighting_lab: "⚔️ Fighting Lab — 8 questions"
+mode.fighting_lab.description: "Study the game in nine manageable labs."
+mode.mixed_review: "🧠 Mixed Review — 8 questions"
+mode.mixed_review.description: "Spaced practice across current, weak, and older skills."
+mode.challenge: "🏆 Challenge — 12 questions"
+mode.challenge.description: "Combine known ideas without hidden new syntax."
+mode.weak: "🌿 My Weak Areas — 8 questions"
+mode.weak.description: "Revisit attempted prerequisite skills that are not secure yet."
+
+challenge.foundations: "Foundations challenge — 15 questions"
+challenge.functions_data: "Functions and data challenge — 15 questions"
+challenge.objects: "Objects and state challenge — 14 questions"
+challenge.fighting: "Fighting final challenge — 15 questions"
+
+feedback.correct: "✅ Correct."
+feedback.incorrect: "Not yet."
+feedback.hint: "Hint: {hint}"
+
+learn.diagnostic.title: "0. Diagnostic: what runs next?"
+learn.diagnostic.body: |
+  Python starts at the top of a file and executes one top-level statement at a time.
+
+  A def statement creates a function. It does not run the indented function body. The body runs only when Python later reaches a call such as hello().
+
+  Before running any example, point to the next executed line and predict the exact output.
+
+learn.values.title: "1. Values, variables, and types"
+learn.values.body: |
+  Assignment stores a current value under a name:
+
+  x = 5
+  y = x
+  x = 8
+
+  Now x is 8 and y is still 5. Ordinary integer variables are not magically connected.
+
+  Core values include int, float, str, bool, and collections such as list, tuple, and dict. Read the current value before worrying about remembering every type name.
+
+learn.io.title: "2. Input and exact output"
+learn.io.body: |
+  print("hp") displays the letters hp. print(hp) displays the value stored in hp.
+
+  An f-string inserts current values, for example f"{{name}}: hp = {{hp}}". input() returns text. Use int() or float() when the program needs a number.
+
+  In output questions, preserve spaces and line order. Any simulated input is supplied explicitly.
+
+learn.conditions.title: "3. Operators and decisions"
+learn.conditions.body: |
+  Arithmetic builds values. Comparisons such as ==, !=, <, >, <=, and >= build True or False. The operators and, or, and not combine boolean values.
+
+  One equals sign assigns. Two equals signs compare.
+
+  In an if / elif / else chain, Python tests from the top and runs only the first matching branch.
+
+learn.loops.title: "4. Loops control repetition"
+learn.loops.body: |
+  A while loop repeats while its condition is True. Something in the loop usually needs to change so the condition can eventually become False.
+
+  break leaves the nearest loop immediately. A for loop with range(3) uses 0, 1, and 2.
+
+  Trace one complete iteration at a time: check condition → run body → update state → check again.
+
+learn.modulo.title: "5. Modulo and counters"
+learn.modulo.body: |
+  The % operator gives a remainder. Dividing turn numbers by 3 creates this repeating remainder pattern:
+
+  1, 2, 0, 1, 2, 0
+
+  That is why turns % 3 == 0 detects every third turn. Explain the remainder pattern instead of memorizing the line.
+
+learn.functions.title: "6. Functions move values"
+learn.functions.body: |
+  def stores instructions. A call runs them. Arguments in a call become parameter values inside the function.
+
+  return sends a value back to the call site. print only displays a value. A function that reaches the end without return sends back None.
+
+  Always track two things separately: what is printed and what value is returned.
+
+learn.randomness.title: "7. Imports and controlled randomness"
+learn.randomness.body: |
+  import random makes the random module available. random.randint(1, 6) returns an integer from 1 through 6. random.choice(items) returns one existing item.
+
+  Random output cannot be predicted exactly unless the result or seed is supplied. Exercises always state an assumed result when needed.
+
+learn.collections.title: "8. Dictionaries, tuples, and unpacking"
+learn.collections.body: |
+  A weapon dictionary maps names to damage values. weapons.items() provides key-value pairs.
+
+  The tuple ("sword", 30) keeps a name and damage together. This line unpacks the pair from left to right:
+
+  name, damage = ("sword", 30)
+
+learn.classes.title: "9. Classes and objects"
+learn.classes.body: |
+  A class is a blueprint. Cat("Murka") creates one object. __init__ gives that new object its starting attributes.
+
+  self is not a Python keyword. It is the conventional parameter name for the object receiving the current method call.
+
+learn.methods.title: "10. Methods and independent state"
+learn.methods.body: |
+  cat1 and cat2 can come from one Cat class but keep separate hp values. Changing cat1.hp does not change cat2.hp.
+
+  In p1.attack(p2), self is p1 and other is p2. A method can read or change either object's attributes according to its code.
+
+learn.terminology.title: "11. Names Python treats differently"
+learn.terminology.body: |
+  Keywords include if, else, elif, while, for, in, def, return, class, import, break, and, or, not, True, and False.
+
+  print, input, int, float, str, and list are built-ins. random.randint is a library function. Player, attack, hp, and p1 are programmer-defined names. __init__ is a special method name.
+
+  self is important, but it is not a reserved Python keyword.
+
+learn.lab1_init.title: "Fighting Lab 1: Player.__init__"
+learn.lab1_init.body: |
+  Read __init__ as the starting-state builder for one new Player. Track name, hp, damage, defense, iniciativa, weapons, and weapon separately.
+
+  When p1 and p2 are created, each object receives its own attributes. Never use one shared HP box for both players.
+
+learn.lab2_weapons.title: "Fighting Lab 2: weapon selection"
+learn.lab2_weapons.body: |
+  The weapon dictionary keeps each name beside its damage. .items() creates name-damage pairs, and random.choice selects one pair.
+
+  An empty tuple means no weapon has been selected. The first attack chooses and stores a weapon; later attacks unpack and reuse it.
+
+learn.lab3_attack.title: "Fighting Lab 3: attack(self, other)"
+learn.lab3_attack.body: |
+  In p1.attack(p2), self is p1 and other is p2. The method is already running for p1 once that call begins.
+
+  Before calculating damage, write down which object is the attacker and which is the target.
+
+learn.lab4_armor.title: "Fighting Lab 4: defense and HP"
+learn.lab4_armor.body: |
+  Damage reduces defense first. If defense becomes negative, that negative remainder reduces HP, then defense becomes zero.
+
+  With 600 HP, 100 defense, and 180 damage: defense reaches -80, hp = 600 + (-80) becomes 520, and defense is reset to 0.
+
+learn.lab5_objects.title: "Fighting Lab 5: p1 and p2"
+learn.lab5_objects.body: |
+  p1.hp and p2.hp are different attributes on different objects. The same is true for damage, defense, initiative, weapon, and an attack counter.
+
+  Use a two-column state table and update only the object named by the executed line.
+
+learn.lab6_loop.title: "Fighting Lab 6: program map and main loop"
+learn.lab6_loop.body: |
+  Python executes imports and definitions first. Concrete game state begins when p1 and p2 are created. Repeated gameplay is controlled by the main while loop at top level.
+
+  A useful map is: imports → class definition → object creation → initial output → main loop → winner output.
+
+learn.lab7_initiative.title: "Fighting Lab 7: initiative"
+learn.lab7_initiative.body: |
+  Initiative values must exist before the program compares them to select an attacker.
+
+  If p1.attack(p2) has started, rerolling values inside attack cannot suddenly make p2 the attacker. That method call is already in progress.
+
+learn.lab8_refactor.title: "Fighting Lab 8: repair initiative"
+learn.lab8_refactor.body: |
+  Roll both initiative attributes in the main loop, then compare them, then call the chosen attack.
+
+  On a tie, reroll only initiative. Replacing p2 with Player("rak") would also replace HP, damage, defense, and weapon state.
+
+learn.lab9_critical.title: "Fighting Lab 9: every third attack"
+learn.lab9_critical.body: |
+  Put self.turns = 0 in __init__ so every player owns a counter. Increase self.turns once per attack.
+
+  When self.turns % 3 == 0, apply critical damage directly to other.hp and leave other.defense unchanged. Build this change one decision at a time.
+
+learn.d20.title: "Optional bridge: a tiny d20 function"
+learn.d20.body: |
+  A larger role-playing game still uses the same small ideas:
+
+  def d20():
+      return random.randint(1, 20)
+
+  This is not a new kind of programming. It wraps a familiar library call in a familiar function. Large games are many small understandable pieces connected together.
+
+question.position: "Question {position} of {total}"
+question.next: "Next"
+question.saved: "Answer saved. Results appear when the challenge is finished."
+question.hint: "💡 Hint"
+question.hint_number: "💡 Hint {number}: {hint}"
+question.hints_done: "All three hints are already open."
+question.practise_skill: "Practise this skill"
+question.open_explanation: "Open explanation"
+question.explanation_title: "Explanation"
+session.summary: "Practice complete: {correct}/{total} correct across {skills} skills."
+session.again: "Practise again"
+session.menu: "Main menu"
+test.summary: "Challenge complete: {correct}/{total} ({percentage}%). You reviewed {skills} skills."
+test.weak: "Practise prerequisites"
+progress.title: "📊 My Python skill map"
+progress.none: "No recorded strengths yet — they will appear as you practise."
+progress.strong: "Strong concepts"
+progress.learning: "Practise next"
+progress.recent: "Recent challenges"
+progress.strong_inline: "Strong"
+progress.next_inline: "Next"
+daily.title: "☀️ Today's small Python problem:"
+daily.done: "Done for today"
+daily.more: "One more"
+daily.five: "Start 6-question practice"
+daily.already: "Today's problem is ready. You can also start quick practice."
+returning: "Welcome back! What would you like to rebuild or test?"
+main_menu: "Choose a Python activity:"
+use_buttons: "Please use the buttons below 🙂"

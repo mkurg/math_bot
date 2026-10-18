@@ -4,6 +4,7 @@ from app.content.loader import ContentCatalog
 from app.topics.algebraic_expressions import AlgebraicExpressionsModule
 from app.topics.invariants import InvariantsModule
 from app.topics.numeral_systems import NumeralSystemsModule
+from app.topics.python_foundations import PythonFoundationsModule
 from app.topics.times_tables import TimesTablesModule
 
 
@@ -15,6 +16,7 @@ def main() -> None:
         NumeralSystemsModule(),
         InvariantsModule(),
         AlgebraicExpressionsModule(),
+        PythonFoundationsModule(),
     )
     errors = [error for module in modules for error in module.validate()]
     searchable = "\n".join(
@@ -26,7 +28,7 @@ def main() -> None:
         raise SystemExit("Content validation failed: " + "; ".join(errors))
     print(
         "Content validation passed: core, times_tables, numeral_systems, invariants, "
-        "and algebraic_expressions"
+        "algebraic_expressions, and python_foundations"
     )
 
 

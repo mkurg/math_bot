@@ -1,11 +1,12 @@
 # Modular Mathematics Bot
 
-A private, invitation-only Telegram bot with four isolated learning modules:
+A private, invitation-only Telegram bot with five isolated learning modules:
 
 - **Times Tables** — a fully Russian multiplication and related exact-division experience for factors 1 through 10;
 - **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation, with three progressive difficulty tiers;
 - **Invariants — What Refuses to Change?** — an eight-part theory sequence and adaptive practice on parity, remainders, checking every allowed move, impossibility proofs, reachability constructions, evidence versus proof, stronger invariants, and the odd part of a number.
 - **Скобки, распределительный закон и подобные слагаемые** — полностью русская последовательность теории и адаптивной практики: части выражения, знаки перед скобками, распределение множителя, коэффициенты, подобные слагаемые и многошаговое упрощение.
+- **Python Foundations & Fighting Game** — an English, execution-first path from variables, exact stdout, conditions, loops, functions, collections, and classes into nine focused labs for tracing, debugging, and modifying the existing Fighting program.
 
 Each student has one active assigned module. Menus, practice, challenges/tests, learning
 material, daily questions, mastery, and progress resolve through that assignment. The
@@ -53,7 +54,7 @@ Open `/admin` as the configured teacher, select **Invite link**, and generate th
 - `DEFAULT_TIMEZONE`: IANA timezone, normally `Europe/Zurich`.
 - `DEFAULT_REMINDER_HOUR`: whole hour from 07 through 20.
 - `DEFAULT_REMINDER_DAYS`: `DAILY`, `WEEKDAYS`, `MWF`, or `OFF`.
-- `ENABLED_TOPIC_IDS`: comma-separated topic IDs; production uses `times_tables,numeral_systems,invariants,algebraic_expressions`.
+- `ENABLED_TOPIC_IDS`: comma-separated topic IDs; production uses `times_tables,numeral_systems,invariants,algebraic_expressions,python_foundations`.
 - `DEFAULT_TOPIC_ID`: must be included in the enabled list.
 - `APP_ENV`: `development`, `test`, or `production`.
 - `LOG_LEVEL`: standard logging level such as `INFO`.
@@ -138,4 +139,5 @@ See [TOPIC_DEVELOPMENT_GUIDE.md](TOPIC_DEVELOPMENT_GUIDE.md) for the extension c
 [ACCEPTANCE_CHECKLIST.md](ACCEPTANCE_CHECKLIST.md) for the original times-table evidence,
 [NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md](NUMERAL_SYSTEMS_ACCEPTANCE_CHECKLIST.md) for the
 second module, and [INVARIANTS_ACCEPTANCE_CHECKLIST.md](INVARIANTS_ACCEPTANCE_CHECKLIST.md)
-for the third module.
+for the third module. The programming curriculum is documented in
+[PYTHON_FOUNDATIONS_ACCEPTANCE_CHECKLIST.md](PYTHON_FOUNDATIONS_ACCEPTANCE_CHECKLIST.md).
