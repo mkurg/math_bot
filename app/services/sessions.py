@@ -80,6 +80,9 @@ async def start_session(
         blueprint = topic.session_blueprint(
             mode_id, count, mastery, configuration, Random(secrets.randbits(64))
         )
+        count = len(blueprint)
+        if count == 0:
+            raise ValueError("no questions are available for this practice mode")
     configuration["blueprint"] = [list(item) for item in blueprint]
     record = PracticeSession(
         user_id=user.id,

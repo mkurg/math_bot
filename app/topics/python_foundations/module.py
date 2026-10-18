@@ -31,12 +31,14 @@ from app.core.topics.contracts import (
     TopicProgressView,
 )
 from app.core.topics.validation import validate_topic_contract
+from app.topics.python_foundations.lessons import LESSON_CODE
 from app.topics.python_foundations.questions import (
     CONCEPTS,
     QUESTION_TYPES,
     STDOUT_SKILLS,
     question_parts,
 )
+from app.topics.python_foundations.russian_tasks import MISCONCEPTION_LABELS
 from app.topics.python_foundations.skills import (
     GROUP_LABELS,
     skill_catalogue,
@@ -239,7 +241,7 @@ MODE_SKILLS: dict[str, tuple[str, ...]] = {
 class PythonFoundationsModule:
     metadata = TopicMetadata(
         topic_id="python_foundations",
-        version="1.0.0",
+        version="1.1.0",
         title_key="topic.title",
         short_title_key="topic.short_title",
         description_key="topic.description",
@@ -258,35 +260,35 @@ class PythonFoundationsModule:
     def practice_modes(self) -> tuple[PracticeModeDefinition, ...]:
         return (
             PracticeModeDefinition(
-                "diagnostic", "mode.diagnostic", "mode.diagnostic.description", 12
+                "diagnostic", "mode.diagnostic", "mode.diagnostic.description", 8
             ),
             PracticeModeDefinition("quick", "mode.quick", "mode.quick.description", 6),
             PracticeModeDefinition(
-                "predict_output", "mode.predict_output", "mode.predict_output.description", 8
+                "predict_output", "mode.predict_output", "mode.predict_output.description", 6
             ),
             PracticeModeDefinition(
-                "trace_program", "mode.trace_program", "mode.trace_program.description", 8
+                "trace_program", "mode.trace_program", "mode.trace_program.description", 6
             ),
-            PracticeModeDefinition("fix_bug", "mode.fix_bug", "mode.fix_bug.description", 8),
+            PracticeModeDefinition("fix_bug", "mode.fix_bug", "mode.fix_bug.description", 6),
             PracticeModeDefinition(
-                "mini_script", "mode.mini_script", "mode.mini_script.description", 6
+                "mini_script", "mode.mini_script", "mode.mini_script.description", 5
             ),
             PracticeModeDefinition(
                 "fighting_lab", "mode.fighting_lab", "mode.fighting_lab.description", 8
             ),
             PracticeModeDefinition(
-                "mixed_review", "mode.mixed_review", "mode.mixed_review.description", 8
+                "mixed_review", "mode.mixed_review", "mode.mixed_review.description", 6
             ),
-            PracticeModeDefinition("challenge", "mode.challenge", "mode.challenge.description", 12),
-            PracticeModeDefinition("weak", "mode.weak", "mode.weak.description", 8),
+            PracticeModeDefinition("challenge", "mode.challenge", "mode.challenge.description", 8),
+            PracticeModeDefinition("weak", "mode.weak", "mode.weak.description", 6),
         )
 
     def test_definitions(self) -> tuple[TestDefinition, ...]:
         return (
-            TestDefinition("foundations", "challenge.foundations", 15, "python_foundations"),
-            TestDefinition("functions_data", "challenge.functions_data", 15, "python_foundations"),
-            TestDefinition("objects", "challenge.objects", 14, "python_foundations"),
-            TestDefinition("fighting", "challenge.fighting", 15, "python_foundations"),
+            TestDefinition("foundations", "challenge.foundations", 12, "python_foundations"),
+            TestDefinition("functions_data", "challenge.functions_data", 12, "python_foundations"),
+            TestDefinition("objects", "challenge.objects", 10, "python_foundations"),
+            TestDefinition("fighting", "challenge.fighting", 8, "python_foundations"),
         )
 
     def learning_units(self) -> tuple[LearningUnit, ...]:
@@ -309,7 +311,7 @@ class PythonFoundationsModule:
                 if key == skill.title_key:
                     return skill_label(skill.skill_key)
                 if key == skill.description_key:
-                    return f"Practise how to {skill_label(skill.skill_key).lower()}."
+                    return f"Повтори тему: {skill_label(skill.skill_key).lower()}."
             raise
 
     def render_learning_unit(self, unit_id: str) -> LearningView:
@@ -319,8 +321,8 @@ class PythonFoundationsModule:
         return LearningView(
             title=self.content(unit.title_key),
             body=self.content(unit.body_key),
-            related_text=self.content("learn.cycle"),
             practice_configuration={"focus_skill": unit.skill_keys[0]},
+            code=LESSON_CODE[unit_id],
         )
 
     def session_blueprint(
@@ -359,19 +361,24 @@ class PythonFoundationsModule:
             if not candidates:
                 candidates = tuple(key for key in mode_candidates if key in unlocked)
             if not candidates:
-                candidates = mode_candidates[:1]
+                if mode_id in {"mini_script", "challenge"}:
+                    candidates = self._unlocked_skills(mastery)
+                else:
+                    candidates = (self._nearest_ready_target(mode_candidates[0], mastery),)
 
-        ordered = self._adaptive_order(candidates, mastery, rng)
+        ordered = (
+            list(candidates)
+            if mode_id == "diagnostic"
+            else self._adaptive_order(candidates, mastery, rng)
+        )
         chosen: list[str] = []
         if focus is not None and focus in mode_candidates:
             target = self._nearest_ready_target(focus, mastery)
-            if target in mode_candidates:
+            if target in self._unlocked_skills(mastery):
                 chosen.append(target)
         for key in ordered:
             if key not in chosen:
                 chosen.append(key)
-        while len(chosen) < question_count:
-            chosen.append(candidates[len(chosen) % len(candidates)])
 
         forced_type = {
             "predict_output": "predict",
@@ -384,7 +391,7 @@ class PythonFoundationsModule:
             if forced_type is not None:
                 question_type = forced_type
             elif mode_id == "diagnostic":
-                question_type = QUESTION_TYPES[index % len(QUESTION_TYPES)]
+                question_type = ("predict", "predict", "apply")[index % 3]
             elif mode_id == "challenge":
                 question_type = ("predict", "apply")[index % 2]
             else:
@@ -394,11 +401,11 @@ class PythonFoundationsModule:
                         "correct_formats", []
                     )
                 }
-                untried = [kind for kind in QUESTION_TYPES if kind not in seen]
+                untried = [kind for kind in ("predict", "apply") if kind not in seen]
                 if untried:
                     question_type = untried[format_counts.get(skill_key, 0) % len(untried)]
                 else:
-                    question_type = rng.choice(QUESTION_TYPES)
+                    question_type = rng.choice(("predict", "apply"))
             format_counts[skill_key] = format_counts.get(skill_key, 0) + 1
             result.append((skill_key, question_type))
         return tuple(result)
@@ -454,34 +461,45 @@ class PythonFoundationsModule:
     def test_blueprint(
         self, test_id: str, configuration: dict[str, Any], rng: Random
     ) -> tuple[tuple[str, str], ...]:
-        del configuration
-        blueprints: dict[str, tuple[tuple[str, str], ...]] = {
-            "foundations": tuple(
-                (key, QUESTION_TYPES[index % 3]) for index, key in enumerate(ALL_SKILLS[:15])
+        del configuration, rng
+        stages: dict[str, tuple[str, ...]] = {
+            "foundations": ALL_SKILLS[:12],
+            "functions_data": (
+                "PY.IO.INPUT",
+                "PY.IO.CONVERSION",
+                "PY.OP.ARITHMETIC",
+                "PY.OP.COMPARISON",
+                "PY.OP.BOOLEAN",
+                "PY.IF.BASIC",
+                "PY.IF.ELIF",
+                "PY.LOOP.WHILE",
+                "PY.LOOP.UPDATE",
+                "PY.FUNC.DEFINE",
+                "PY.FUNC.CALL",
+                "PY.FUNC.RETURN",
             ),
-            "functions_data": tuple(
-                (key, ("predict", "apply")[index % 2])
-                for index, key in enumerate(ALL_SKILLS[18:33])
+            "objects": (
+                "PY.IMPORT.BASIC",
+                "PY.RANDOM.RANDINT",
+                "PY.DICT.BASIC",
+                "PY.DICT.ITEMS",
+                "PY.TUPLE.BASIC",
+                "PY.UNPACKING",
+                "PY.CLASS.CLASS_VS_OBJECT",
+                "PY.CLASS.INIT",
+                "PY.CLASS.SELF",
+                "PY.CLASS.SELF_OTHER",
             ),
-            "objects": tuple(
-                (key, ("recognize", "predict", "apply")[index % 3])
-                for index, key in enumerate(ALL_SKILLS[33:45])
-            )
-            + (("PY.CLASS.SELF_OTHER", "predict"), ("PY.CLASS.STATE_CHANGE", "apply")),
-            "fighting": tuple(
-                (
-                    GAME_SKILLS[index % len(GAME_SKILLS)],
-                    ("recognize", "predict", "apply")[index % 3],
-                )
-                for index in range(15)
-            ),
+            "fighting": GAME_SKILLS,
         }
         try:
-            result = list(blueprints[test_id])
+            keys = stages[test_id]
         except KeyError as exc:
             raise ValueError(f"unknown Python Foundations challenge: {test_id}") from exc
-        rng.shuffle(result)
-        return tuple(result)
+        return tuple(
+            (key, "apply" if (index + 1) % 3 == 0 or key == "GAME.CRITICAL_COUNTER" else "predict")
+            for index, key in enumerate(keys)
+        )
 
     def generate_question(
         self, skill_key: str, question_type: str, rng: Random
@@ -553,20 +571,20 @@ class PythonFoundationsModule:
             feedback_payload={
                 "equation": explanation
                 if is_correct
-                else "That choice does not match the value flow or rule in this example.",
+                else "Этот вариант не соответствует выполнению показанного кода.",
                 "misconception": "" if is_correct else str(metadata.get("misconception", "")),
             },
             hint_key=None if is_correct else "feedback.hint",
             hint_payload=None
             if is_correct
-            else {"hint": hints[0] if hints else "Trace one executed step at a time."},
+            else {"hint": hints[0] if hints else "Проследи выполненные строки по порядку."},
         )
 
     def retry_question_type(self, skill_key: str, question_type: str, rng: Random) -> str:
         if skill_key not in self._skill_map:
             raise ValueError(f"unknown Python Foundations skill: {skill_key}")
-        alternatives = [kind for kind in QUESTION_TYPES if kind != question_type]
-        return rng.choice(alternatives)
+        del rng
+        return "apply" if question_type != "apply" else "predict"
 
     def progress_view(
         self, mastery: dict[str, MasteryState], metrics: dict[str, int | float]
@@ -609,11 +627,11 @@ class PythonFoundationsModule:
         )[:3]
         return TopicProgressView(
             headline_metrics=(
-                Metric("Answers", str(int(metrics.get("total", 0)))),
-                Metric("Answers in 7 days", str(int(metrics.get("recent", 0)))),
-                Metric("Recent accuracy", f"{int(metrics.get('accuracy', 0))}%"),
-                Metric("Mastered skills", str(len(mastered))),
-                Metric("Practice days", str(int(metrics.get("active_days", 0)))),
+                Metric("Ответов", str(int(metrics.get("total", 0)))),
+                Metric("Ответов за 7 дней", str(int(metrics.get("recent", 0)))),
+                Metric("Точность за 7 дней", f"{int(metrics.get('accuracy', 0))}%"),
+                Metric("Освоено тем", str(len(mastered))),
+                Metric("Дней практики", str(int(metrics.get("active_days", 0)))),
             ),
             progress_groups=tuple(groups),
             strengths=tuple(
@@ -624,7 +642,7 @@ class PythonFoundationsModule:
                 ProgressItem(skill_label(item.skill_key), skill_key=item.skill_key)
                 for item in targets
             ),
-            suggested_action=SuggestedAction("Continue adaptive practice", "practice:quick"),
+            suggested_action=SuggestedAction("Продолжить практику", "practice:quick"),
         )
 
     @staticmethod
@@ -683,18 +701,21 @@ class PythonFoundationsModule:
             format_results.get(label, {}).get("correct", 0) for label in ("construction", "debug")
         )
         return (
-            ProgressItem("Attempts", str(int(metrics.get("total", 0)))),
-            ProgressItem("Recent accuracy", f"{int(metrics.get('accuracy', 0))}%"),
-            ProgressItem("Hints used", str(int(metrics.get("hints", 0)))),
-            ProgressItem("Prediction skills demonstrated", str(prediction_skills)),
-            ProgressItem("Construction/debug skills demonstrated", str(construction_skills)),
-            ProgressItem("Exact-output performance", f"{stdout['correct']}/{stdout['attempts']}"),
+            ProgressItem("Ответов", str(int(metrics.get("total", 0)))),
+            ProgressItem("Точность за 7 дней", f"{int(metrics.get('accuracy', 0))}%"),
+            ProgressItem("Открыто подсказок", str(int(metrics.get("hints", 0)))),
+            ProgressItem("Тем с верным прогнозом", str(prediction_skills)),
+            ProgressItem("Тем с верным исправлением", str(construction_skills)),
+            ProgressItem("Точный вывод", f"{stdout['correct']}/{stdout['attempts']}"),
             ProgressItem(
-                "Construction/debug performance",
+                "Исправление кода",
                 f"{construction_correct}/{construction_attempts}",
             ),
-            ProgressItem("Fighting skills mastered", f"{fighting_mastered}/{len(GAME_SKILLS)}"),
-            *(ProgressItem(label, f"seen {count} times") for label, count in ranked),
+            ProgressItem("Освоено тем Fighting", f"{fighting_mastered}/{len(GAME_SKILLS)}"),
+            *(
+                ProgressItem(MISCONCEPTION_LABELS.get(label, label), f"ошибок: {count}")
+                for label, count in ranked
+            ),
         )
 
     def daily_skill(

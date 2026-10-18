@@ -117,8 +117,11 @@ async def learning_unit(callback: CallbackQuery, app: Application) -> None:
             )
         ]
     )
+    text = f"<b>{escape(view.title)}</b>\n\n{escape(view.body)}"
+    if view.code:
+        text += f'\n\n<pre><code class="language-python">{escape(view.code)}</code></pre>'
     await callback.message.answer(
-        f"<b>{escape(view.title)}</b>\n\n{escape(view.body)}",
+        text,
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
     )
     await record_live_event(

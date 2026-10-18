@@ -3,6 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import escape
 
+from app.topics.python_foundations.russian_tasks import (
+    CHECKS,
+    DETAILS,
+    EDITS,
+    localized_output_answers,
+)
+
 QUESTION_TYPES = ("recognize", "predict", "apply")
 
 
@@ -690,216 +697,13 @@ CONCEPTS: dict[str, Concept] = {
 }
 
 
-APPLICATIONS: dict[str, tuple[str, tuple[str, str, str, str]]] = {
-    "PY.EXEC.DEF_VS_CALL": (
-        "The function is defined but never runs. Which line should be added?",
-        ("hello()", "def hello", "print = hello", "return hello"),
-    ),
-    "PY.INDENTATION": (
-        "Which line correctly places the output inside an if block?",
-        ('    print("alive")', 'print("alive"):', 'if print("alive")', 'print: "alive"'),
-    ),
-    "PY.IO.PRINT": (
-        "Which line prints the current value of hp?",
-        ("print(hp)", 'print("hp")', "hp.print()", "print = hp"),
-    ),
-    "PY.IO.FSTRING": (
-        "Which line prints rak: hp = 25 using the variables name and hp?",
-        (
-            'print(f"{name}: hp = {hp}")',
-            'print("name: hp = hp")',
-            'print(f"name: hp = hp")',
-            "print({name}, {hp})",
-        ),
-    ),
-    "PY.IO.INPUT": (
-        "Which line stores the user's name?",
-        ('name = input("Name: ")', 'input = name("Name: ")', "print(name)", "name == input"),
-    ),
-    "PY.IO.CONVERSION": (
-        "Which line stores numeric age from typed input?",
-        (
-            'age = int(input("Age: "))',
-            'age = input(int("Age: "))',
-            'age == input("Age: ")',
-            "int = age(input())",
-        ),
-    ),
-    "PY.OP.COMPARISON": (
-        "Which condition checks whether hp equals zero?",
-        ("hp == 0", "hp = 0", "hp != 0", "0 = hp"),
-    ),
-    "PY.IF.BASIC": (
-        "Which line starts the alive branch?",
-        ("if hp > 0:", "if hp > 0", "hp > 0 if:", "if hp = 0:"),
-    ),
-    "PY.LOOP.WHILE": (
-        "Which line repeats while both players are alive?",
-        (
-            "while p1.hp > 0 and p2.hp > 0:",
-            "if p1.hp > 0 and p2.hp > 0:",
-            "while p1.hp = p2.hp:",
-            "while True and False:",
-        ),
-    ),
-    "PY.LOOP.UPDATE": (
-        "A loop keeps printing 1. Which line should its body add?",
-        ("x += 1", "x == 1", "x + 1", "x = 1"),
-    ),
-    "PY.LOOP.FOR_RANGE": (
-        "Which line begins a loop that uses 0, 1, and 2?",
-        ("for i in range(3):", "for i in 3:", "while i in range:", "for range(3) as i:"),
-    ),
-    "PY.FUNC.DEFINE": (
-        "Which line begins a function named shout with parameter word?",
-        ("def shout(word):", "shout def word:", "def shout = word", "function shout(word)"),
-    ),
-    "PY.FUNC.CALL": (
-        "Which line calls shout with the argument hello?",
-        ('shout("hello")', 'def shout("hello")', 'call shout = "hello"', 'shout["hello"]'),
-    ),
-    "PY.FUNC.PARAMETER": (
-        "Which definition lets greet receive a name?",
-        ("def greet(name):", "def greet(): name", "greet = def(name)", "def name(greet):"),
-    ),
-    "PY.FUNC.RETURN": (
-        "Which function body sends twice x back to the caller?",
-        ("return x * 2", "print = x * 2", "x * 2", "return = x"),
-    ),
-    "PY.FUNC.PRINT_VS_RETURN": (
-        "double must supply a value for a = double(5). Which repair is needed?",
-        ("Use return x * 2", "Use print(x * 2) only", "Remove the call", "Set x to None"),
-    ),
-    "PY.RANDOM.RANDINT": (
-        "Which line returns a six-sided die result?",
-        (
-            "return random.randint(1, 6)",
-            "return random.randint(6)",
-            "return randint.random(1, 6)",
-            "return random.choice(1, 6)",
-        ),
-    ),
-    "PY.DICT.BASIC": (
-        "Which dictionary stores sword damage 30?",
-        (
-            '{"sword": 30}',
-            '["sword", 30]',
-            '("sword": 30)',
-            "{30: 30}",
-        ),
-    ),
-    "PY.CLASS.INIT": (
-        "Which line stores a starting hp attribute in __init__?",
-        ("self.hp = 10", "hp.self = 10", "self == hp", "return hp = 10"),
-    ),
-    "PY.CLASS.SELF": (
-        "Inside cat1.heal(), which name should refer to cat1?",
-        ("self", "Cat", "heal", "other"),
-    ),
-    "PY.CLASS.METHOD": (
-        "Which line makes p1 attack p2?",
-        ("p1.attack(p2)", "p2.attack = p1", "attack(p1).p2", "Player.attack = p2"),
-    ),
-    "PY.CLASS.MULTIPLE_OBJECTS": (
-        "Which code creates two independent Cat objects?",
-        (
-            'cat1 = Cat("Murka"); cat2 = Cat("Barsik")',
-            'cat1 = cat2 = "Cat"',
-            "Cat = cat1 + cat2",
-            "cat1.name = cat2",
-        ),
-    ),
-    "PY.CLASS.STATE_CHANGE": (
-        "Which line removes 3 HP from this object?",
-        ("self.hp -= 3", "self.hp == 3", "hp.self - 3", "self = hp - 3"),
-    ),
-    "PY.CLASS.SELF_OTHER": (
-        "Inside attack, which line removes 5 HP from the target?",
-        ("other.hp -= 5", "self.hp -= 5", "other = hp - 5", "Player.hp -= 5"),
-    ),
-    "GAME.STRUCTURE": (
-        "Which order builds the game from definitions into play?",
-        (
-            "class → objects → main loop → winner",
-            "winner → class → imports → objects",
-            "main loop → class → objects → imports",
-            "objects → winner → class → main loop",
-        ),
-    ),
-    "GAME.PLAYER_STATE": (
-        "Which line reads player 2's HP without changing player 1?",
-        ("p2.hp", "p1.hp", "Player.hp", "self.p1.hp"),
-    ),
-    "GAME.WEAPON_SELECTION": (
-        "Which line stores the chosen name and damage together?",
-        (
-            "self.weapon = attack_name, damage",
-            "self.weapon == ()",
-            "weapon = self",
-            "attack_name = self.damage",
-        ),
-    ),
-    "GAME.ARMOR_DAMAGE": (
-        "Defense became -80. Which two-line repair moves overflow to HP?",
-        (
-            "other.hp += other.defense; other.defense = 0",
-            "other.hp -= other.defense; other.defense = -80",
-            "other.hp = 0; other.defense = 80",
-            "self.hp += 80; other.defense = 0",
-        ),
-    ),
-    "GAME.MAIN_LOOP": (
-        "Which condition stops combat when either player reaches zero HP?",
-        (
-            "while p1.hp > 0 and p2.hp > 0:",
-            "while p1.hp > 0 or p2.hp > 0:",
-            "while p1.hp == p2.hp:",
-            "while Player.hp:",
-        ),
-    ),
-    "GAME.INITIATIVE": (
-        "Where should both initiative rolls happen?",
-        (
-            "Before choosing the attacker in the main loop",
-            "After attack finishes",
-            "Only inside __init__",
-            "After printing the winner",
-        ),
-    ),
-    "GAME.DEBUG_INITIATIVE": (
-        "A tie creates p2 = Player('rak'). What should replace that reset?",
-        (
-            "Reroll only p1.iniciativa and p2.iniciativa",
-            "Create both players again",
-            "Set both HP values to zero",
-            "Choose a new weapon for p2",
-        ),
-    ),
-    "GAME.CRITICAL_COUNTER": (
-        "Which pair increments a per-player counter and detects a third hit?",
-        (
-            "self.turns += 1; self.turns % 3 == 0",
-            "turns = 3; turns / 3 == 0",
-            "p1.turns = p2.turns; turns == 0",
-            "self.turns == 1; self.turns % 2",
-        ),
-    ),
-}
-
-
 STDOUT_SKILLS = tuple(key for key, concept in CONCEPTS.items() if concept.stdout_code)
 
 
 _RECOGNITION_DISTRACTORS = (
-    "Python runs every indented block immediately.",
-    "All names always share one value.",
-    "This changes appearance only, never execution.",
-)
-
-_APPLICATION_DISTRACTORS = (
-    "Skip tracing and guess from the final line.",
-    "Recreate every variable and object from scratch.",
-    "Move the code randomly until the error disappears.",
+    "Каждый блок с отступом выполняется сразу.",
+    "Все переменные и объекты всегда хранят одно значение.",
+    "Порядок строк никогда не влияет на результат.",
 )
 
 
@@ -908,21 +712,37 @@ def question_parts(skill_key: str, question_type: str) -> QuestionParts:
         concept = CONCEPTS[skill_key]
     except KeyError as exc:
         raise ValueError(f"unknown Python Foundations skill: {skill_key}") from exc
+    rule, explanation, hint = DETAILS[skill_key]
+    check = CHECKS.get(skill_key)
+    code = concept.stdout_code if concept.stdout_code is not None else check.code if check else None
+    if code is None:
+        raise ValueError(f"missing code context for {skill_key}")
     if question_type == "recognize":
         return QuestionParts(
-            prompt="Which statement is correct for this skill?",
-            answers=(concept.principle, *_RECOGNITION_DISTRACTORS),
-            explanation=concept.explanation,
-            hints=(concept.direction_hint, concept.principle, concept.explanation),
+            prompt=f"Какое правило помогает понять этот код?\n\n{code_block(code)}",
+            answers=(rule, *_RECOGNITION_DISTRACTORS),
+            explanation=explanation,
+            hints=(hint, rule),
             misconception=concept.misconception,
             difficulty_level=1,
         )
     if question_type == "predict":
+        if concept.stdout_code is None:
+            assert check is not None
+            prompt = f"{check.question}\n\n{code_block(check.code)}"
+            answers = check.answers
+        else:
+            input_note = ""
+            if concept.stdout_inputs:
+                values = ", ".join(repr(value) for value in concept.stdout_inputs)
+                input_note = f"\nВвод пользователя: {values}."
+            prompt = f"Что точно выведет программа?{input_note}\n\n{code_block(code)}"
+            answers = localized_output_answers(concept.check_answers)
         return QuestionParts(
-            prompt=concept.check_prompt,
-            answers=concept.check_answers,
-            explanation=concept.explanation,
-            hints=(concept.direction_hint, concept.principle, concept.explanation),
+            prompt=prompt,
+            answers=answers,
+            explanation=explanation,
+            hints=(hint, rule, explanation),
             misconception=concept.misconception,
             difficulty_level=2,
             stdout_code=concept.stdout_code,
@@ -930,25 +750,12 @@ def question_parts(skill_key: str, question_type: str) -> QuestionParts:
             stdout_expected=concept.stdout_expected,
         )
     if question_type == "apply":
-        application = APPLICATIONS.get(skill_key)
-        if application is not None:
-            prompt, answers = application
-            return QuestionParts(
-                prompt=prompt,
-                answers=answers,
-                explanation=concept.explanation,
-                hints=(concept.direction_hint, concept.principle, concept.explanation),
-                misconception=concept.misconception,
-                difficulty_level=3,
-            )
+        edit = EDITS[skill_key]
         return QuestionParts(
-            prompt=(
-                "A classmate is stuck on this idea. Which advice would repair the mental "
-                "model or code?"
-            ),
-            answers=(concept.principle, *_APPLICATION_DISTRACTORS),
-            explanation=concept.explanation,
-            hints=(concept.direction_hint, concept.principle, concept.explanation),
+            prompt=f"{edit.question}\n\n{code_block(edit.code)}",
+            answers=edit.answers,
+            explanation=explanation,
+            hints=(hint, rule, explanation),
             misconception=concept.misconception,
             difficulty_level=3,
         )

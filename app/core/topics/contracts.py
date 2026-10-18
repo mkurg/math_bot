@@ -64,6 +64,7 @@ class LearningView:
     image_payload: dict[str, Any] = field(default_factory=dict)
     related_text: str | None = None
     practice_configuration: dict[str, Any] = field(default_factory=dict)
+    code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

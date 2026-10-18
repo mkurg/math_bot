@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from random import Random
@@ -10,6 +11,7 @@ import pytest
 from app.core.questions.answer_modes import validate_options
 from app.core.topics.contracts import MasteryState
 from app.topics.python_foundations import PythonFoundationsModule
+from app.topics.python_foundations.lessons import LESSON_CODE
 from app.topics.python_foundations.module import (
     ALL_SKILLS,
     GAME_SKILLS,
@@ -19,6 +21,13 @@ from app.topics.python_foundations.questions import (
     CONCEPTS,
     QUESTION_TYPES,
     STDOUT_SKILLS,
+    question_parts,
+)
+from app.topics.python_foundations.russian_tasks import (
+    CHECKS,
+    DETAILS,
+    EDITS,
+    MISCONCEPTION_LABELS,
 )
 from app.topics.python_foundations.skills import GROUP_LABELS, skill_catalogue, skill_label
 
@@ -52,19 +61,21 @@ def test_complete_contract_curriculum_and_stable_skill_map() -> None:
         for item in module.skills()
     )
     assert module.validate() == []
-    assert skill_label("PY.CLASS.SELF_OTHER") == "Trace self and other"
+    assert skill_label("PY.CLASS.SELF_OTHER") == "self и other"
     with pytest.raises(ValueError):
         skill_label("missing")
 
 
-def test_learning_sequence_is_english_small_first_and_contains_nine_labs() -> None:
+def test_learning_sequence_is_russian_code_first_and_contains_nine_labs() -> None:
     module = PythonFoundationsModule()
     combined = ""
     lab_ids: list[str] = []
     for unit in module.learning_units():
         view = module.render_learning_unit(unit.unit_id)
         assert view.title and view.body
-        assert view.related_text == "Predict → Run → Explain → Modify"
+        assert view.related_text is None
+        assert view.code == LESSON_CODE[unit.unit_id]
+        compile(view.code, f"<lesson:{unit.unit_id}>", "exec")
         assert view.practice_configuration["focus_skill"] in unit.skill_keys
         combined += f"\n{view.title}\n{view.body}"
         if unit.unit_id.startswith("lab"):
@@ -88,19 +99,11 @@ def test_learning_sequence_is_english_small_first_and_contains_nine_labs() -> No
             start=1,
         )
     ]
-    for required in (
-        "top of a file",
-        "does not run",
-        "one equals sign assigns",
-        "print only displays",
-        "self is not a Python keyword",
-        "p1.attack(p2)",
-        "main while loop",
-        "reroll only initiative",
-        "self.turns % 3 == 0",
-        "many small understandable pieces",
-    ):
-        assert required.lower() in combined.lower()
+    for required in ("сверху вниз", "отдельный", "сравнивает", "возвращает", "критический"):
+        assert required in combined.lower()
+    assert "p1.attack(p2)" in LESSON_CODE["lab3_attack"]
+    assert "other.defense -= damage" in LESSON_CODE["lab9_critical"]
+    assert "% 3 == 0" in module.content("learn.lab9_critical.body")
     assert "dataclass" not in combined.lower()
     assert "json" not in combined.lower()
     with pytest.raises(ValueError):
@@ -123,6 +126,10 @@ def test_each_skill_has_three_difficulty_levels_and_evaluable_questions(
             assert len(question.answer_options) == 4
             assert len({item.label for item in question.answer_options}) == 4
             assert 1 <= len(question.metadata["hints"]) <= 3
+            assert '<pre><code class="language-python">' in question.rendered_prompt
+            assert question.metadata["prompt_format"] == "html"
+            assert re.search(r"[А-Яа-яЁё]", question.rendered_prompt.split("<pre>")[0])
+            assert re.search(r"[А-Яа-яЁё]", question.explanation_payload["explanation"])
             levels.add(int(question.metadata["difficulty_level"]))
             assert module.evaluate_answer(asdict(question), question.correct_answer).is_correct
             wrong = next(
@@ -135,6 +142,21 @@ def test_each_skill_has_three_difficulty_levels_and_evaluable_questions(
             assert outcome.feedback_payload["misconception"]
             assert outcome.hint_payload and outcome.hint_payload["hint"]
     assert levels == {1, 2, 3}
+
+
+def test_all_tasks_have_full_context_and_distinct_edit_exercises() -> None:
+    assert set(DETAILS) == set(CONCEPTS) == set(EDITS)
+    assert {item.misconception for item in CONCEPTS.values()} <= set(MISCONCEPTION_LABELS)
+    assert set(CHECKS) == {key for key, concept in CONCEPTS.items() if concept.stdout_code is None}
+    for key, check in CHECKS.items():
+        compile(check.code, f"<check:{key}>", "exec")
+    for key in CONCEPTS:
+        prediction = question_parts(key, "predict")
+        edit = question_parts(key, "apply")
+        assert prediction.prompt != edit.prompt
+        assert prediction.answers != edit.answers
+        assert "<pre><code" in prediction.prompt
+        assert "<pre><code" in edit.prompt
 
 
 def test_stdout_questions_are_compiled_executed_and_exact() -> None:
@@ -160,8 +182,10 @@ def test_modes_are_specific_adaptive_prerequisite_aware_and_varied() -> None:
         blueprint = module.session_blueprint(
             mode.mode_id, mode.default_question_count, {}, {}, Random(42)
         )
-        assert len(blueprint) == mode.default_question_count
-        assert all(key in MODE_SKILLS[mode.mode_id] for key, _ in blueprint)
+        assert 1 <= len(blueprint) <= mode.default_question_count
+        assert len({key for key, _ in blueprint}) == len(blueprint)
+        if mode.mode_id not in {"fighting_lab", "mini_script", "challenge"}:
+            assert all(key in MODE_SKILLS[mode.mode_id] for key, _ in blueprint)
         assert all(kind in QUESTION_TYPES for _, kind in blueprint)
         if mode.mode_id == "predict_output":
             assert all(key in STDOUT_SKILLS and kind == "predict" for key, kind in blueprint)
@@ -170,6 +194,7 @@ def test_modes_are_specific_adaptive_prerequisite_aware_and_varied() -> None:
 
     initial = module.session_blueprint("quick", 6, {}, {}, Random(4))
     assert not {key for key, _ in initial}.intersection(GAME_SKILLS)
+    assert all(kind in {"predict", "apply"} for _, kind in initial)
 
     focus = module.session_blueprint(
         "fighting_lab", 4, {}, {"focus_skill": "GAME.DEBUG_INITIATIVE"}, Random(4)
@@ -194,11 +219,17 @@ def test_modes_are_specific_adaptive_prerequisite_aware_and_varied() -> None:
 
 def test_challenges_retry_daily_progress_and_teacher_misconceptions() -> None:
     module = PythonFoundationsModule()
-    expected_counts = {"foundations": 15, "functions_data": 15, "objects": 14, "fighting": 15}
+    expected_counts = {"foundations": 12, "functions_data": 12, "objects": 10, "fighting": 8}
     for definition in module.test_definitions():
         blueprint = module.test_blueprint(definition.test_id, {}, Random(8))
         assert len(blueprint) == expected_counts[definition.test_id]
         assert all(key in ALL_SKILLS and kind in QUESTION_TYPES for key, kind in blueprint)
+        assert len({key for key, _ in blueprint}) == len(blueprint)
+    assert tuple(key for key, _ in module.test_blueprint("fighting", {}, Random(8))) == GAME_SKILLS
+    assert module.test_blueprint("fighting", {}, Random(8))[-1] == (
+        "GAME.CRITICAL_COUNTER",
+        "apply",
+    )
     with pytest.raises(ValueError):
         module.test_blueprint("missing", {}, Random(1))
 
@@ -245,18 +276,10 @@ def test_challenges_retry_daily_progress_and_teacher_misconceptions() -> None:
     insights = module.teacher_insights(
         {state.skill_key: state}, {"total": 9, "accuracy": 78, "hints": 2}
     )
-    assert any(
-        item.label == "self_other_confusion" and item.value == "seen 3 times" for item in insights
-    )
-    assert any(
-        item.label == "Prediction skills demonstrated" and item.value == "1" for item in insights
-    )
-    assert any(
-        item.label == "Exact-output performance" and item.value == "3/4" for item in insights
-    )
-    assert any(
-        item.label == "Construction/debug performance" and item.value == "4/5" for item in insights
-    )
+    assert any(item.label == "self и other" and item.value == "ошибок: 3" for item in insights)
+    assert any(item.label == "Тем с верным прогнозом" and item.value == "1" for item in insights)
+    assert any(item.label == "Точный вывод" and item.value == "3/4" for item in insights)
+    assert any(item.label == "Исправление кода" and item.value == "4/5" for item in insights)
 
 
 def test_acceptance_scenario_tracks_definition_self_state_and_initiative() -> None:
@@ -277,13 +300,13 @@ def test_acceptance_scenario_tracks_definition_self_state_and_initiative() -> No
         for option in self_other.answer_options
         if option.value == self_other.correct_answer
     )
-    assert correct_label == "p2"
+    assert correct_label == "cat2"
 
     armor = module.generate_question("GAME.ARMOR_DAMAGE", "predict", Random(2))
     armor_label = next(
         option.label for option in armor.answer_options if option.value == armor.correct_answer
     )
-    assert armor_label == "HP 520, defense 0"
+    assert armor_label == "520 0"
 
     initiative = module.generate_question("GAME.DEBUG_INITIATIVE", "predict", Random(2))
     initiative_label = next(
@@ -291,7 +314,7 @@ def test_acceptance_scenario_tracks_definition_self_state_and_initiative() -> No
         for option in initiative.answer_options
         if option.value == initiative.correct_answer
     )
-    assert initiative_label == "p1; the call is already executing"
+    assert initiative_label == "p1"
 
     critical = module.generate_question("GAME.CRITICAL_COUNTER", "predict", Random(2))
     critical_label = next(
@@ -299,7 +322,7 @@ def test_acceptance_scenario_tracks_definition_self_state_and_initiative() -> No
         for option in critical.answer_options
         if option.value == critical.correct_answer
     )
-    assert critical_label == "self.turns % 3 == 0"
+    assert critical_label == "3"
 
 
 def test_invalid_questions_and_missing_media_fail_cleanly() -> None:

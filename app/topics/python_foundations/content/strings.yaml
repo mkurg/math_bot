@@ -1,233 +1,186 @@
-topic.title: "Python Foundations & Fighting Game"
-topic.short_title: "Python & Fighting"
-topic.description: "Rebuild Python execution, then trace, debug, and modify the Fighting game."
+topic.title: "Основы Python и игра Fighting"
+topic.short_title: "Python и Fighting"
+topic.description: "От первых строк к самостоятельной доработке игры Fighting."
 
-menu.practice: "▶️ Practice Python"
-menu.learn: "📚 Learn Python"
-menu.tests: "🎯 Challenges"
-menu.daily: "☀️ Daily task"
-menu.progress: "📊 My progress"
-menu.settings: "⚙️ Settings"
-menu.back: "Back"
-practice.title: "Choose a Python practice mode:"
-tests.title: "Choose a challenge:"
-learn.title: "Learn in order, or revisit one small idea:"
-learn.practice: "Check this idea now"
-learn.cycle: "Predict → Run → Explain → Modify"
+menu.practice: "▶️ Практика Python"
+menu.learn: "📚 Уроки Python"
+menu.tests: "🎯 Проверочные"
+menu.daily: "☀️ Задание дня"
+menu.progress: "📊 Мой прогресс"
+menu.settings: "⚙️ Напоминания"
+menu.back: "Назад"
+practice.title: "Практика: выбери формат. Темы подбираются по твоему прогрессу."
+tests.title: "Проверочные идут от основ к игре:"
+learn.title: "Маршрут: основы → функции → объекты → Fighting → своя доработка. Предскажи, запусти, объясни и измени пример."
+learn.practice: "Проверить этот шаг"
 
-mode.diagnostic: "🩺 Diagnostic — 12 questions"
-mode.diagnostic.description: "Find what you remember before rebuilding the foundations."
-mode.quick: "🌱 Quick Practice — 6 questions"
-mode.quick.description: "Adaptive practice on the next useful prerequisites."
-mode.predict_output: "🖥 Predict the Output — 8 questions"
-mode.predict_output.description: "Predict exact, machine-checked Python output."
-mode.trace_program: "🔎 Trace the Program — 8 questions"
-mode.trace_program.description: "Follow values, branches, loops, calls, and object state."
-mode.fix_bug: "🪲 Fix the Bug — 8 questions"
-mode.fix_bug.description: "Diagnose one conceptual or logic mistake at a time."
-mode.mini_script: "⌨️ Write a Mini Script — 6 questions"
-mode.mini_script.description: "Choose and assemble the line or small function that solves a task."
-mode.fighting_lab: "⚔️ Fighting Lab — 8 questions"
-mode.fighting_lab.description: "Study the game in nine manageable labs."
-mode.mixed_review: "🧠 Mixed Review — 8 questions"
-mode.mixed_review.description: "Spaced practice across current, weak, and older skills."
-mode.challenge: "🏆 Challenge — 12 questions"
-mode.challenge.description: "Combine known ideas without hidden new syntax."
-mode.weak: "🌿 My Weak Areas — 8 questions"
-mode.weak.description: "Revisit attempted prerequisite skills that are not secure yet."
+mode.diagnostic: "🩺 Проверка основ — 8 задач"
+mode.diagnostic.description: "Короткая проверка перед маршрутом."
+mode.quick: "🌱 Быстрая практика — 6 задач"
+mode.quick.description: "Следующий доступный шаг и слабые места."
+mode.predict_output: "🖥 Что выведет код — до 6 задач"
+mode.predict_output.description: "Точный вывод коротких программ."
+mode.trace_program: "🔎 Проследить выполнение — до 6 задач"
+mode.trace_program.description: "Значения, ветки, циклы и вызовы."
+mode.fix_bug: "🪲 Исправить ошибку — до 6 задач"
+mode.fix_bug.description: "Найти и исправить одну ошибку."
+mode.mini_script: "⌨️ Дописать код — 5 задач"
+mode.mini_script.description: "Выбрать строку для короткой программы."
+mode.fighting_lab: "⚔️ Путь к Fighting — до 8 задач"
+mode.fighting_lab.description: "От состояния игрока до критического удара; сначала проверяются нужные основы."
+mode.mixed_review: "🧠 Повторение — 6 задач"
+mode.mixed_review.description: "Вернуться к старым и трудным темам."
+mode.challenge: "🏆 Сложные задачи — 8 задач"
+mode.challenge.description: "Несколько знакомых идей вместе."
+mode.weak: "🌿 Трудные темы — 6 задач"
+mode.weak.description: "Повторить то, где были ошибки."
 
-challenge.foundations: "Foundations challenge — 15 questions"
-challenge.functions_data: "Functions and data challenge — 15 questions"
-challenge.objects: "Objects and state challenge — 14 questions"
-challenge.fighting: "Fighting final challenge — 15 questions"
+challenge.foundations: "1. Основы — 12 задач"
+challenge.functions_data: "2. Управление и функции — 12 задач"
+challenge.objects: "3. Данные и объекты — 10 задач"
+challenge.fighting: "4. Финал: Fighting — 8 задач"
 
-feedback.correct: "✅ Correct."
-feedback.incorrect: "Not yet."
-feedback.hint: "Hint: {hint}"
+feedback.correct: "✅ Верно."
+feedback.incorrect: "Пока нет."
+feedback.hint: "Подсказка: {hint}"
 
-learn.diagnostic.title: "0. Diagnostic: what runs next?"
+learn.diagnostic.title: "0. С чего начинается выполнение?"
 learn.diagnostic.body: |
-  Python starts at the top of a file and executes one top-level statement at a time.
+  Python идёт по строкам файла сверху вниз. Строка def создаёт функцию, но её тело выполняется только после вызова.
+  Сначала предскажи, что появится на экране. Затем добавь hello() перед последним print и проверь новый порядок.
 
-  A def statement creates a function. It does not run the indented function body. The body runs only when Python later reaches a call such as hello().
-
-  Before running any example, point to the next executed line and predict the exact output.
-
-learn.values.title: "1. Values, variables, and types"
+learn.values.title: "1. Переменные и значения"
 learn.values.body: |
-  Assignment stores a current value under a name:
+  Присваивание сохраняет текущее значение. Когда x меняется позже, прежнее значение y остаётся прежним.
+  Проследи две переменные отдельно. Типы int, float, str и bool узнавай по значениям.
 
-  x = 5
-  y = x
-  x = 8
-
-  Now x is 8 and y is still 5. Ordinary integer variables are not magically connected.
-
-  Core values include int, float, str, bool, and collections such as list, tuple, and dict. Read the current value before worrying about remembering every type name.
-
-learn.io.title: "2. Input and exact output"
+learn.io.title: "2. Ввод и вывод"
 learn.io.body: |
-  print("hp") displays the letters hp. print(hp) displays the value stored in hp.
+  print показывает значение, а input получает текст. Для вычислений введённый текст переводят через int() или float().
+  При проверке вывода важны порядок строк и пробелы. В задачах с input ввод всегда указан.
 
-  An f-string inserts current values, for example f"{{name}}: hp = {{hp}}". input() returns text. Use int() or float() when the program needs a number.
-
-  In output questions, preserve spaces and line order. Any simulated input is supplied explicitly.
-
-learn.conditions.title: "3. Operators and decisions"
+learn.conditions.title: "3. Условия и сравнения"
 learn.conditions.body: |
-  Arithmetic builds values. Comparisons such as ==, !=, <, >, <=, and >= build True or False. The operators and, or, and not combine boolean values.
+  Знак = присваивает, а == сравнивает. Сравнение даёт True или False.
+  В цепочке if/elif/else выполняется первая подходящая ветка. Проверяй условия сверху вниз.
 
-  One equals sign assigns. Two equals signs compare.
-
-  In an if / elif / else chain, Python tests from the top and runs only the first matching branch.
-
-learn.loops.title: "4. Loops control repetition"
+learn.loops.title: "4. Циклы"
 learn.loops.body: |
-  A while loop repeats while its condition is True. Something in the loop usually needs to change so the condition can eventually become False.
+  while проверяет условие перед каждой итерацией. Счётчик должен меняться, иначе цикл может не закончиться.
+  break выходит из цикла. range(3) даёт 0, 1 и 2. Проследи одну итерацию целиком.
 
-  break leaves the nearest loop immediately. A for loop with range(3) uses 0, 1, and 2.
-
-  Trace one complete iteration at a time: check condition → run body → update state → check again.
-
-learn.modulo.title: "5. Modulo and counters"
+learn.modulo.title: "5. Счётчик и остаток"
 learn.modulo.body: |
-  The % operator gives a remainder. Dividing turn numbers by 3 creates this repeating remainder pattern:
+  Оператор % возвращает остаток. Для номеров атак остатки при делении на 3 идут так: 1, 2, 0, 1, 2, 0.
+  Поэтому turns % 3 == 0 узнаёт каждую третью атаку.
 
-  1, 2, 0, 1, 2, 0
-
-  That is why turns % 3 == 0 detects every third turn. Explain the remainder pattern instead of memorizing the line.
-
-learn.functions.title: "6. Functions move values"
+learn.functions.title: "6. Функции: вызов и результат"
 learn.functions.body: |
-  def stores instructions. A call runs them. Arguments in a call become parameter values inside the function.
+  def определяет функцию, вызов запускает её. Аргумент попадает в параметр.
+  return передаёт значение обратно. print только показывает значение; без return функция возвращает None.
 
-  return sends a value back to the call site. print only displays a value. A function that reaches the end without return sends back None.
-
-  Always track two things separately: what is printed and what value is returned.
-
-learn.randomness.title: "7. Imports and controlled randomness"
+learn.randomness.title: "7. Модули и случайный выбор"
 learn.randomness.body: |
-  import random makes the random module available. random.randint(1, 6) returns an integer from 1 through 6. random.choice(items) returns one existing item.
+  import random подключает модуль. randint выбирает целое число из диапазона, choice — один элемент списка.
+  Точный результат случайного вызова нельзя предсказать, поэтому в заданиях он указан отдельно.
 
-  Random output cannot be predicted exactly unless the result or seed is supplied. Exercises always state an assumed result when needed.
-
-learn.collections.title: "8. Dictionaries, tuples, and unpacking"
+learn.collections.title: "8. Словарь, кортеж и распаковка"
 learn.collections.body: |
-  A weapon dictionary maps names to damage values. weapons.items() provides key-value pairs.
+  Словарь связывает имя оружия с уроном. Кортеж хранит имя и урон вместе.
+  При распаковке name получает первый элемент, damage — второй.
 
-  The tuple ("sword", 30) keeps a name and damage together. This line unpacks the pair from left to right:
-
-  name, damage = ("sword", 30)
-
-learn.classes.title: "9. Classes and objects"
+learn.classes.title: "9. Класс и первый объект"
 learn.classes.body: |
-  A class is a blueprint. Cat("Murka") creates one object. __init__ gives that new object its starting attributes.
+  class описывает устройство объекта. Вызов Cat создаёт отдельный объект; __init__ записывает его начальные атрибуты.
+  self — обычное имя параметра для текущего объекта, а не ключевое слово Python.
 
-  self is not a Python keyword. It is the conventional parameter name for the object receiving the current method call.
-
-learn.methods.title: "10. Methods and independent state"
+learn.methods.title: "10. Методы и два объекта"
 learn.methods.body: |
-  cat1 and cat2 can come from one Cat class but keep separate hp values. Changing cat1.hp does not change cat2.hp.
+  cat1 и cat2 созданы из одного класса, но имеют собственный hp. В cat1.hit(cat2) self — cat1, other — cat2.
+  Выполняй метод по строкам и меняй только названный объект.
 
-  In p1.attack(p2), self is p1 and other is p2. A method can read or change either object's attributes according to its code.
-
-learn.terminology.title: "11. Names Python treats differently"
+learn.terminology.title: "11. Какие имена знает Python?"
 learn.terminology.body: |
-  Keywords include if, else, elif, while, for, in, def, return, class, import, break, and, or, not, True, and False.
+  if, def и class — ключевые слова. print и int — встроенные имена. random.randint — функция модуля.
+  Player и hp придумал программист. __init__ — специальное имя метода. self — не ключевое слово.
 
-  print, input, int, float, str, and list are built-ins. random.randint is a library function. Player, attack, hp, and p1 are programmer-defined names. __init__ is a special method name.
-
-  self is important, but it is not a reserved Python keyword.
-
-learn.lab1_init.title: "Fighting Lab 1: Player.__init__"
+learn.lab1_init.title: "12. Fighting: начальное состояние"
 learn.lab1_init.body: |
-  Read __init__ as the starting-state builder for one new Player. Track name, hp, damage, defense, iniciativa, weapons, and weapon separately.
+  __init__ создаёт состояние одного игрока. Найди имя, HP, урон, защиту, инициативу и оружие.
+  Создание p1 и p2 запускает __init__ два раза: состояние каждого своё.
 
-  When p1 and p2 are created, each object receives its own attributes. Never use one shared HP box for both players.
-
-learn.lab2_weapons.title: "Fighting Lab 2: weapon selection"
+learn.lab2_weapons.title: "13. Fighting: выбор оружия"
 learn.lab2_weapons.body: |
-  The weapon dictionary keeps each name beside its damage. .items() creates name-damage pairs, and random.choice selects one pair.
+  Словарь хранит название и урон. items() даёт пары, choice выбирает одну, а распаковка разделяет её части.
+  В игре выбранная пара сохраняется в self.weapon, чтобы не выбирать оружие снова каждый ход.
 
-  An empty tuple means no weapon has been selected. The first attack chooses and stores a weapon; later attacks unpack and reuse it.
-
-learn.lab3_attack.title: "Fighting Lab 3: attack(self, other)"
+learn.lab3_attack.title: "14. Fighting: кто кого атакует?"
 learn.lab3_attack.body: |
-  In p1.attack(p2), self is p1 and other is p2. The method is already running for p1 once that call begins.
+  В p1.attack(p2) self — p1, other — p2. Перед вычислением урона назови атакующего и цель.
+  В примере меняется HP цели.
 
-  Before calculating damage, write down which object is the attacker and which is the target.
-
-learn.lab4_armor.title: "Fighting Lab 4: defense and HP"
+learn.lab4_armor.title: "15. Fighting: защита и HP"
 learn.lab4_armor.body: |
-  Damage reduces defense first. If defense becomes negative, that negative remainder reduces HP, then defense becomes zero.
+  Урон сначала уменьшает защиту. Если она стала отрицательной, остаток уменьшает HP, затем защита становится нулём.
+  Для 600 HP, 100 защиты и 180 урона результат — 520 HP и 0 защиты.
 
-  With 600 HP, 100 defense, and 180 damage: defense reaches -80, hp = 600 + (-80) becomes 520, and defense is reset to 0.
-
-learn.lab5_objects.title: "Fighting Lab 5: p1 and p2"
+learn.lab5_objects.title: "16. Fighting: два независимых игрока"
 learn.lab5_objects.body: |
-  p1.hp and p2.hp are different attributes on different objects. The same is true for damage, defense, initiative, weapon, and an attack counter.
+  p1.hp и p2.hp — разные ячейки состояния. Меняй только ту, которую называет выполненная строка.
+  Точно так же отдельно хранятся оружие, инициатива и число атак.
 
-  Use a two-column state table and update only the object named by the executed line.
-
-learn.lab6_loop.title: "Fighting Lab 6: program map and main loop"
+learn.lab6_loop.title: "17. Fighting: карта программы и цикл"
 learn.lab6_loop.body: |
-  Python executes imports and definitions first. Concrete game state begins when p1 and p2 are created. Repeated gameplay is controlled by the main while loop at top level.
+  Сначала выполняются определения, затем создаются игроки. Главный while повторяет ходы, пока оба живы.
+  После выхода из цикла определяется победитель. Отметь, где начинается конкретная игра.
 
-  A useful map is: imports → class definition → object creation → initial output → main loop → winner output.
-
-learn.lab7_initiative.title: "Fighting Lab 7: initiative"
+learn.lab7_initiative.title: "18. Fighting: выбор атакующего"
 learn.lab7_initiative.body: |
-  Initiative values must exist before the program compares them to select an attacker.
+  Сравнение инициативы происходит до вызова attack. Новый бросок внутри уже начавшейся атаки не заменит атакующего.
+  Проследи порядок действий.
 
-  If p1.attack(p2) has started, rerolling values inside attack cannot suddenly make p2 the attacker. That method call is already in progress.
-
-learn.lab8_refactor.title: "Fighting Lab 8: repair initiative"
+learn.lab8_refactor.title: "19. Fighting: исправить инициативу"
 learn.lab8_refactor.body: |
-  Roll both initiative attributes in the main loop, then compare them, then call the chosen attack.
+  Каждый ход сначала бросай инициативу, затем сравнивай и выбирай атаку. При ничьей перебрасывай только инициативу.
+  Создание нового Player сбросило бы HP, защиту и оружие.
 
-  On a tie, reroll only initiative. Replacing p2 with Player("rak") would also replace HP, damage, defense, and weapon state.
-
-learn.lab9_critical.title: "Fighting Lab 9: every third attack"
+learn.lab9_critical.title: "20. Финальное задание: критический удар"
 learn.lab9_critical.body: |
-  Put self.turns = 0 in __init__ so every player owns a counter. Increase self.turns once per attack.
+  Открой свой Fighting. Добавь отдельный счётчик атак каждому игроку. Увеличивай его один раз за атаку.
+  Каждая третья атака должна бить прямо по HP и оставлять защиту неизменной.
+  Проверь три атаки каждого игрока и объясни, почему при третьей срабатывает % 3 == 0.
 
-  When self.turns % 3 == 0, apply critical damage directly to other.hp and leave other.defense unchanged. Build this change one decision at a time.
-
-learn.d20.title: "Optional bridge: a tiny d20 function"
+learn.d20.title: "21. По желанию: маленькая функция d20"
 learn.d20.body: |
-  A larger role-playing game still uses the same small ideas:
+  Большая ролевая игра состоит из знакомых маленьких частей. Эта функция соединяет return и randint.
+  Дополнительные игровые правила пока не нужны.
 
-  def d20():
-      return random.randint(1, 20)
-
-  This is not a new kind of programming. It wraps a familiar library call in a familiar function. Large games are many small understandable pieces connected together.
-
-question.position: "Question {position} of {total}"
-question.next: "Next"
-question.saved: "Answer saved. Results appear when the challenge is finished."
-question.hint: "💡 Hint"
-question.hint_number: "💡 Hint {number}: {hint}"
-question.hints_done: "All three hints are already open."
-question.practise_skill: "Practise this skill"
-question.open_explanation: "Open explanation"
-question.explanation_title: "Explanation"
-session.summary: "Practice complete: {correct}/{total} correct across {skills} skills."
-session.again: "Practise again"
-session.menu: "Main menu"
-test.summary: "Challenge complete: {correct}/{total} ({percentage}%). You reviewed {skills} skills."
-test.weak: "Practise prerequisites"
-progress.title: "📊 My Python skill map"
-progress.none: "No recorded strengths yet — they will appear as you practise."
-progress.strong: "Strong concepts"
-progress.learning: "Practise next"
-progress.recent: "Recent challenges"
-progress.strong_inline: "Strong"
-progress.next_inline: "Next"
-daily.title: "☀️ Today's small Python problem:"
-daily.done: "Done for today"
-daily.more: "One more"
-daily.five: "Start 6-question practice"
-daily.already: "Today's problem is ready. You can also start quick practice."
-returning: "Welcome back! What would you like to rebuild or test?"
-main_menu: "Choose a Python activity:"
-use_buttons: "Please use the buttons below 🙂"
+question.position: "Вопрос {position} из {total}"
+question.next: "Дальше"
+question.saved: "Ответ записан. Результаты будут после проверочной."
+question.hint: "💡 Подсказка"
+question.hint_number: "💡 Подсказка {number}: {hint}"
+question.hints_done: "Все подсказки уже открыты."
+question.practise_skill: "Повторить тему"
+question.open_explanation: "Показать объяснение"
+question.explanation_title: "Объяснение"
+session.summary: "Практика завершена: {correct}/{total} верно, тем: {skills}."
+session.again: "Ещё практика"
+session.menu: "Главное меню"
+test.summary: "Проверочная завершена: {correct}/{total} ({percentage}%). Тем: {skills}."
+test.weak: "Повторить трудные темы"
+progress.title: "📊 Мой путь по Python"
+progress.none: "Освоенные темы появятся после практики."
+progress.strong: "Уверенные темы"
+progress.learning: "Следующий шаг"
+progress.recent: "Недавние проверочные"
+progress.strong_inline: "Получается"
+progress.next_inline: "Дальше"
+daily.title: "☀️ Небольшая задача по Python:"
+daily.done: "На сегодня готово"
+daily.more: "Ещё одна"
+daily.five: "Шесть задач"
+daily.already: "Задача дня уже готова. Можно начать быструю практику."
+returning: "Продолжим Python?"
+main_menu: "Выбери урок, практику или проверочную:"
+use_buttons: "Пожалуйста, выбери кнопку ниже 🙂"
