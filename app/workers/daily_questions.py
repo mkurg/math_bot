@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime
-from html import escape
 from zoneinfo import ZoneInfo
 
 from aiogram import Bot
@@ -16,6 +15,7 @@ from app.bot import Application
 from app.database.models import DailyDelivery, Question, User
 from app.keyboards.questions import answer_choices_text, answer_keyboard
 from app.services.daily import prepare_daily_question
+from app.services.question_formatting import render_question_prompt
 from app.services.reminders import day_matches
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ async def deliver_due(bot: Bot, app: Application, now: datetime | None = None) -
 
 
 async def _send(bot: Bot, app: Application, chat_id: int, question: Question) -> None:
-    prompt = escape(str(question.prompt_payload["rendered_prompt"]))
+    prompt = render_question_prompt(question.prompt_payload)
     options = answer_choices_text(question)
     if options:
         prompt = f"{prompt}\n\n{options}"

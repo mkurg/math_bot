@@ -4,6 +4,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from app.bot import Application
 from app.handlers.common import actor, callback_actor, show_main_menu
+from app.keyboards.common import main_menu_action
 
 router = Router(name="menu")
 
@@ -60,6 +61,37 @@ async def unexpected_text(message: Message, app: Application) -> None:
 
         await message.answer("Teacher profile", reply_markup=ReplyKeyboardRemove())
         await message.answer(app.content.get("admin.title"), reply_markup=admin_keyboard(app))
+        return
+    action = main_menu_action(app.registry.get(user.selected_topic_id), message.text or "")
+    if action == "practice":
+        from app.handlers.practice import show_practice
+
+        await show_practice(message, app, user.selected_topic_id, user.id)
+        return
+    if action == "learn":
+        from app.handlers.learning import show_learning
+
+        await show_learning(message, app, user.selected_topic_id, user.id)
+        return
+    if action == "tests":
+        from app.handlers.tests import show_tests
+
+        await show_tests(message, app, user.selected_topic_id, user.id)
+        return
+    if action == "daily":
+        from app.handlers.daily import daily_task
+
+        await daily_task(message, app)
+        return
+    if action == "progress":
+        from app.handlers.progress import progress
+
+        await progress(message, app)
+        return
+    if action == "settings":
+        from app.handlers.settings import settings_menu
+
+        await settings_menu(message, app)
         return
     await message.answer(app.text("use_buttons", user.selected_topic_id))
     await show_main_menu(message, app, user.selected_topic_id, student_id=user.id)

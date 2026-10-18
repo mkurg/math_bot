@@ -20,6 +20,7 @@ from app.database.models import PracticeSession, Question, User
 from app.keyboards.common import main_menu
 from app.keyboards.questions import answer_choices_text, answer_keyboard
 from app.services.live_lessons import mirror_photo, mirror_question, record_live_event
+from app.services.question_formatting import render_question_prompt
 from app.services.users import get_user, touch_user
 
 
@@ -90,7 +91,7 @@ async def send_question(
     if bot is None:
         raise RuntimeError("Telegram bot context is unavailable")
     message = cast(Message, message)
-    prompt = escape(str(question.prompt_payload["rendered_prompt"]))
+    prompt = render_question_prompt(question.prompt_payload)
     options = answer_choices_text(question)
     if options:
         prompt = f"{prompt}\n\n{options}"

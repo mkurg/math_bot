@@ -8,7 +8,9 @@ from app.config import Settings
 from app.content.loader import ContentCatalog
 from app.core.topics.contracts import Metric, ProgressGroup, ProgressItem, TopicProgressView
 from app.handlers.progress import render_progress
-from app.keyboards.common import main_menu, table_grid
+from app.keyboards.common import main_menu, main_menu_action, table_grid
+from app.services.question_formatting import render_question_prompt
+from app.topics.python_foundations import PythonFoundationsModule
 from app.topics.times_tables import TimesTablesModule
 
 
@@ -50,6 +52,22 @@ def test_content_catalog_and_keyboards() -> None:
     grid = table_grid("table")
     assert len(grid.inline_keyboard) == 3
     assert grid.inline_keyboard[0][0].callback_data == "table:1"
+
+
+def test_python_menu_labels_resolve_to_actions() -> None:
+    topic = PythonFoundationsModule()
+    for action in ("practice", "learn", "tests", "daily", "progress", "settings"):
+        assert main_menu_action(topic, topic.content(f"menu.{action}")) == action
+    assert main_menu_action(topic, "not a menu button") is None
+
+
+def test_question_prompt_rendering_preserves_only_declared_html() -> None:
+    code = '<pre><code class="language-python">print(&quot;hi&quot;)</code></pre>'
+    assert (
+        render_question_prompt({"rendered_prompt": code, "metadata": {"prompt_format": "html"}})
+        == code
+    )
+    assert render_question_prompt({"rendered_prompt": "x < 2"}) == "x &lt; 2"
 
 
 def test_generic_progress_rendering() -> None:

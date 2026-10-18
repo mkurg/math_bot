@@ -512,6 +512,8 @@ class PythonFoundationsModule:
                 else question_type
             ),
         }
+        if '<pre><code class="language-python">' in parts.prompt:
+            metadata["prompt_format"] = "html"
         if parts.stdout_code is not None:
             metadata.update(
                 {

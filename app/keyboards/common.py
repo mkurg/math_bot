@@ -7,6 +7,22 @@ from aiogram.types import (
 
 from app.core.topics.contracts import TopicModule
 
+MAIN_MENU_ITEMS = (
+    ("practice", "menu.practice"),
+    ("learn", "menu.learn"),
+    ("tests", "menu.tests"),
+    ("daily", "menu.daily"),
+    ("progress", "menu.progress"),
+    ("settings", "menu.settings"),
+)
+
+
+def main_menu_action(topic: TopicModule, text: str) -> str | None:
+    for action, content_key in MAIN_MENU_ITEMS:
+        if text == topic.content(content_key):
+            return action
+    return None
+
 
 def main_menu(topic: TopicModule) -> ReplyKeyboardMarkup:
     rows = (

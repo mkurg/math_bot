@@ -33,7 +33,7 @@ class QuestionParts:
 
 
 def code_block(code: str) -> str:
-    return f"<pre><code>{escape(code)}</code></pre>"
+    return f'<pre><code class="language-python">{escape(code)}</code></pre>'
 
 
 def _q(

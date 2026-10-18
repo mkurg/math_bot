@@ -1,3 +1,4 @@
+from html import escape
 from typing import cast
 
 from aiogram import F, Router
@@ -117,7 +118,7 @@ async def learning_unit(callback: CallbackQuery, app: Application) -> None:
         ]
     )
     await callback.message.answer(
-        f"<b>{view.title}</b>\n\n{view.body}",
+        f"<b>{escape(view.title)}</b>\n\n{escape(view.body)}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
     )
     await record_live_event(
@@ -193,8 +194,8 @@ async def learning_division(callback: CallbackQuery, app: Application) -> None:
     result = await _learning_context(callback, app)
     if result and result[3].related_text:
         await callback.message.answer(
-            f"<b>{app.text('learn.related_title', result[0].selected_topic_id)}</b>"
-            f"\n\n{result[3].related_text}"
+            f"<b>{escape(app.text('learn.related_title', result[0].selected_topic_id))}</b>"
+            f"\n\n{escape(result[3].related_text)}"
         )
         await record_live_event(
             callback.bot,

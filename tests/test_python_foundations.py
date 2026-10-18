@@ -148,7 +148,8 @@ def test_stdout_questions_are_compiled_executed_and_exact() -> None:
         question = module.generate_question(skill_key, "predict", Random(7))
         assert question.metadata["validated_stdout"] is True
         assert question.metadata["stdout_expected"] == actual
-        assert "<pre><code>" in question.rendered_prompt
+        assert '<pre><code class="language-python">' in question.rendered_prompt
+        assert question.metadata["prompt_format"] == "html"
     assert CONCEPTS["PY.IO.INPUT"].stdout_inputs == ("Rak",)
     assert CONCEPTS["PY.RANDOM.RANDINT"].stdout_code is None
 
