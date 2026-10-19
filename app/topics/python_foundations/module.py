@@ -47,6 +47,7 @@ from app.topics.python_foundations.skills import (
 )
 
 CONTENT_PATH = Path(__file__).with_name("content") / "strings.yaml"
+CATALOG_PAGE_SIZE = 8
 
 
 LEARNING_SPECS: tuple[tuple[str, tuple[str, ...], str], ...] = (
@@ -322,7 +323,7 @@ class PythonFoundationsModule:
         return LearningView(
             title=self.content(unit.title_key),
             body=self.content(unit.body_key),
-            practice_configuration={"focus_skill": unit.skill_keys[0]},
+            practice_configuration={"focus_skill": unit.skill_keys[0], "lesson_unit": unit.unit_id},
             code=LESSON_CODE[unit_id],
         )
 
@@ -340,12 +341,33 @@ class PythonFoundationsModule:
             raise ValueError(f"unknown Python Foundations mode: {mode_id}") from exc
         if question_count < 1:
             raise ValueError("question_count must be positive")
+        catalog_skill = configuration.get("catalog_skill")
+        catalog_type = configuration.get("catalog_type")
+        if catalog_skill is not None or catalog_type is not None:
+            if (
+                mode_id != "quick"
+                or question_count != 1
+                or catalog_skill not in self._skill_map
+                or catalog_type not in QUESTION_TYPES
+            ):
+                raise ValueError("invalid Python Foundations catalog selection")
+            # The optional catalog is a preview of the complete bank, including
+            # later topics. Adaptive practice still respects prerequisites.
+            return ((str(catalog_skill), str(catalog_type)),)
         focus_value = configuration.get("focus_skill")
         focus = str(focus_value) if focus_value is not None else None
         if focus is not None and focus not in self._skill_map:
             raise ValueError("unknown focus skill")
 
-        if mode_id == "diagnostic":
+        lesson_unit_id = configuration.get("lesson_unit")
+        if lesson_unit_id is not None:
+            lesson_unit = next(
+                (unit for unit in self.learning_units() if unit.unit_id == lesson_unit_id), None
+            )
+            if lesson_unit is None:
+                raise ValueError("unknown Python Foundations lesson")
+            candidates = tuple(dict.fromkeys(lesson_unit.skill_keys))
+        elif mode_id == "diagnostic":
             candidates = mode_candidates
         else:
             unlocked = set(self._unlocked_skills(mastery))
@@ -367,13 +389,20 @@ class PythonFoundationsModule:
                 else:
                     candidates = (self._nearest_ready_target(mode_candidates[0], mastery),)
 
-        ordered = (
-            list(candidates)
-            if mode_id == "diagnostic"
-            else self._adaptive_order(candidates, mastery, rng)
-        )
+        if lesson_unit_id is not None:
+            # A selected lesson should exercise its own topics, even when the
+            # student's adaptive-practice prerequisites are not yet unlocked.
+            ordered = sorted(
+                candidates,
+                key=lambda key: mastery.get(key, MasteryState(key)).attempt_count,
+            )
+        elif mode_id == "diagnostic":
+            sample = set(rng.sample(candidates, min(question_count, len(candidates))))
+            ordered = [key for key in candidates if key in sample]
+        else:
+            ordered = self._adaptive_order(candidates, mastery, rng)
         chosen: list[str] = []
-        if focus is not None and focus in mode_candidates:
+        if lesson_unit_id is None and focus is not None and focus in mode_candidates:
             target = self._nearest_ready_target(focus, mastery)
             if target in self._unlocked_skills(mastery):
                 chosen.append(target)
@@ -387,7 +416,6 @@ class PythonFoundationsModule:
             "mini_script": "apply",
         }.get(mode_id)
         result: list[tuple[str, str]] = []
-        format_counts: dict[str, int] = {}
         for index, skill_key in enumerate(chosen[:question_count]):
             if forced_type is not None:
                 question_type = forced_type
@@ -396,18 +424,17 @@ class PythonFoundationsModule:
             elif mode_id == "challenge":
                 question_type = ("predict", "apply")[index % 2]
             else:
+                state = mastery.get(skill_key, MasteryState(skill_key)).state
                 seen = {
                     str(value)
-                    for value in mastery.get(skill_key, MasteryState(skill_key)).state.get(
-                        "correct_formats", []
-                    )
+                    for field in ("attempted_types", "correct_formats")
+                    for value in state.get(field, [])
                 }
                 untried = [kind for kind in ("predict", "apply") if kind not in seen]
                 if untried:
-                    question_type = untried[format_counts.get(skill_key, 0) % len(untried)]
+                    question_type = untried[0]
                 else:
                     question_type = rng.choice(("predict", "apply"))
-            format_counts[skill_key] = format_counts.get(skill_key, 0) + 1
             result.append((skill_key, question_type))
         return tuple(result)
 

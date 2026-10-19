@@ -506,3 +506,49 @@ async def test_teacher_can_assign_python_to_self_and_practice_without_losing_adm
         own_user = await session.get(User, own_id)
         assert own_user and own_user.role == "admin" and not own_user.study_mode
         assert own_user.selected_topic_id == "python_foundations"
+
+
+@pytest.mark.asyncio
+async def test_python_catalog_opens_late_tasks_for_student_without_unlocks(
+    db_sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    student = await seed_student(db_sessions, telegram_id=411)
+    async with db_sessions() as session, session.begin():
+        own_user = await session.get(User, student.id)
+        assert own_user is not None
+        own_user.selected_topic_id = "python_foundations"
+    app = make_app(db_sessions, with_python=True)
+    bot = AsyncMock()
+    message = fake_message(student.telegram_user_id, bot)
+
+    await practice.show_practice(message, app, "python_foundations")
+    menu_markup = cast(AsyncMock, message.answer).await_args.kwargs["reply_markup"]
+    assert any(
+        button.callback_data == "pc:0"
+        for row in menu_markup.inline_keyboard
+        for button in row
+    )
+    await practice.catalog_page(
+        fake_callback(message, "pc:6", student.telegram_user_id, bot), app
+    )
+    await practice.catalog_skill(
+        fake_callback(message, "ps:52", student.telegram_user_id, bot), app
+    )
+    skill_markup = cast(AsyncMock, message.answer).await_args.kwargs["reply_markup"]
+    assert {row[0].callback_data for row in skill_markup.inline_keyboard[:3]} == {
+        "pq:52:recognize",
+        "pq:52:predict",
+        "pq:52:apply",
+    }
+    await practice.catalog_question(
+        fake_callback(message, "pq:52:apply", student.telegram_user_id, bot), app
+    )
+    async with db_sessions() as session:
+        question = await session.scalar(
+            select(Question).where(
+                Question.user_id == student.id, Question.status == "pending"
+            )
+        )
+        assert question is not None
+        assert question.skill_key == "GAME.CRITICAL_COUNTER"
+        assert question.question_type == "apply"

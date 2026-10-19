@@ -180,6 +180,10 @@ async def _record_answer(
     mastery.last_answered_at = now
     mastery.last_correct_at = now if evaluation.is_correct else mastery.last_correct_at
     topic_state = {**mastery.topic_state, "correct_dates": list(updated.correct_dates)}
+    if question.topic_id == "python_foundations":
+        attempted = [str(item) for item in topic_state.get("attempted_types", [])]
+        attempted.append(question.question_type)
+        topic_state["attempted_types"] = attempted[-6:]
     if evaluation.is_correct:
         formats = [str(item) for item in topic_state.get("correct_formats", [])]
         formats.append(question.question_type)

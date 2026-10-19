@@ -29,6 +29,7 @@ from app.services.answers import (
 from app.services.live_lessons import mirror_answer, record_live_event
 from app.services.sessions import next_question, start_session
 from app.services.statistics import progress_for_user
+from app.topics.python_foundations.module import CATALOG_PAGE_SIZE
 
 router = Router(name="questions")
 
@@ -319,8 +320,28 @@ async def _session_summary(
     if view and view.current_targets:
         text += "\n" + app.text("progress.next_inline", practice_session.topic_id) + ": "
         text += ", ".join(item.label for item in view.current_targets[:3])
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
+    catalog_skill = practice_session.configuration.get("catalog_skill")
+    if practice_session.topic_id == "python_foundations" and isinstance(catalog_skill, str):
+        skill_keys = [
+            item.skill_key for item in app.registry.get(practice_session.topic_id).skills()
+        ]
+        index = skill_keys.index(catalog_skill)
+        action_rows = [
+            [
+                InlineKeyboardButton(
+                    text=app.text("catalog.more_skill", practice_session.topic_id),
+                    callback_data=f"ps:{index}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=app.text("catalog.all_skills", practice_session.topic_id),
+                    callback_data=f"pc:{index // CATALOG_PAGE_SIZE}",
+                )
+            ],
+        ]
+    else:
+        action_rows = [
             [
                 InlineKeyboardButton(
                     text=again_label,
@@ -328,7 +349,11 @@ async def _session_summary(
                         "pm:weak" if practice_session.session_kind == "test" else "pm:quick"
                     ),
                 )
-            ],
+            ]
+        ]
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            *action_rows,
             [
                 InlineKeyboardButton(
                     text=app.text("session.menu", practice_session.topic_id),

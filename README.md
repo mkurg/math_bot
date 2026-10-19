@@ -6,7 +6,7 @@ A private, invitation-only Telegram bot with five isolated learning modules:
 - **Numeral Systems and Data Representation** — binary, octal, decimal, hexadecimal, bits, bytes, RGB, ASCII, and interpretation, with three progressive difficulty tiers;
 - **Invariants — What Refuses to Change?** — an eight-part theory sequence and adaptive practice on parity, remainders, checking every allowed move, impossibility proofs, reachability constructions, evidence versus proof, stronger invariants, and the odd part of a number.
 - **Скобки, распределительный закон и подобные слагаемые** — полностью русская последовательность теории и адаптивной практики: части выражения, знаки перед скобками, распределение множителя, коэффициенты, подобные слагаемые и многошаговое упрощение.
-- **Основы Python и игра Fighting** — русскоязычный маршрут от выполнения первых строк до девяти игровых лабораторных работ и самостоятельной доработки критического удара. Вопросы показывают полный фрагмент кода, а тренировки и проверки идут от простого к сложному без повторения навыка в одной сессии.
+- **Основы Python и игра Fighting** — русскоязычный маршрут от выполнения первых строк до девяти игровых лабораторных работ и самостоятельной доработки критического удара. Вопросы показывают полный фрагмент кода. Адаптивная практика идёт от простого к сложному; кнопка «Проверить этот шаг» использует задания выбранного урока. В «Практике Python» → «Все задания» можно открыть все 53 темы и три типа задач каждой темы, включая ещё не пройденные.
 
 Each student has one active assigned module. Menus, practice, challenges/tests, learning
 material, daily questions, mastery, and progress resolve through that assignment. The

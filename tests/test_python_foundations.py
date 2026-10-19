@@ -11,11 +11,13 @@ import pytest
 from app.core.questions.answer_modes import validate_options
 from app.core.topics.contracts import MasteryState
 from app.database.models import Question
+from app.handlers.practice import CATALOG_PAGE_SIZE, _catalog_page, _catalog_skill
 from app.keyboards.questions import answer_choices_text
 from app.topics.python_foundations import PythonFoundationsModule
 from app.topics.python_foundations.lessons import LESSON_CODE
 from app.topics.python_foundations.module import (
     ALL_SKILLS,
+    DIAGNOSTIC_SKILLS,
     GAME_SKILLS,
     MODE_SKILLS,
 )
@@ -175,6 +177,106 @@ def test_all_tasks_have_full_context_and_distinct_edit_exercises() -> None:
         assert prediction.answers != edit.answers
         assert "<pre><code" in prediction.prompt
         assert "<pre><code" in edit.prompt
+
+
+def test_catalog_exposes_every_task_in_curriculum_order_without_unlocks() -> None:
+    module = PythonFoundationsModule()
+    selected: set[tuple[str, str]] = set()
+    pages = (len(ALL_SKILLS) + CATALOG_PAGE_SIZE - 1) // CATALOG_PAGE_SIZE
+    listed_indices: list[int] = []
+    for page in range(pages):
+        title, keyboard = _catalog_page(module, page)
+        assert "Все задания" in title
+        listed_indices.extend(
+            int(button.callback_data.split(":")[1])
+            for row in keyboard.inline_keyboard
+            for button in row
+            if button.callback_data and button.callback_data.startswith("ps:")
+        )
+    assert listed_indices == list(range(len(ALL_SKILLS)))
+    for index, skill_key in enumerate(ALL_SKILLS):
+        title, keyboard = _catalog_skill(module, index)
+        assert skill_label(skill_key) in title
+        callbacks = [row[0].callback_data for row in keyboard.inline_keyboard[:3]]
+        assert callbacks == [f"pq:{index}:{kind}" for kind in QUESTION_TYPES]
+        for kind in QUESTION_TYPES:
+            blueprint = module.session_blueprint(
+                "quick",
+                1,
+                {},
+                {"catalog_skill": skill_key, "catalog_type": kind},
+                Random(1),
+            )
+            assert blueprint == ((skill_key, kind),)
+            selected.update(blueprint)
+    assert len(selected) == 53 * 3
+    with pytest.raises(ValueError):
+        _catalog_page(module, pages)
+    with pytest.raises(ValueError):
+        _catalog_skill(module, len(ALL_SKILLS))
+    with pytest.raises(ValueError):
+        module.session_blueprint(
+            "quick", 1, {}, {"catalog_skill": ALL_SKILLS[0], "catalog_type": "missing"}, Random(1)
+        )
+
+
+def test_regular_practice_tries_other_code_format_after_an_attempt() -> None:
+    module = PythonFoundationsModule()
+    first = module.session_blueprint(
+        "quick", 1, {}, {"focus_skill": "PY.EXEC.ORDER"}, Random(1)
+    )
+    assert first == (("PY.EXEC.ORDER", "predict"),)
+    attempted = {
+        "PY.EXEC.ORDER": MasteryState(
+            "PY.EXEC.ORDER", state={"attempted_types": ["predict"]}
+        )
+    }
+    second = module.session_blueprint(
+        "quick", 1, attempted, {"focus_skill": "PY.EXEC.ORDER"}, Random(1)
+    )
+    assert second == (("PY.EXEC.ORDER", "apply"),)
+
+
+def test_short_diagnostic_reaches_its_full_pool_across_runs() -> None:
+    module = PythonFoundationsModule()
+    covered = {
+        skill
+        for seed in range(30)
+        for skill, _ in module.session_blueprint("diagnostic", 8, {}, {}, Random(seed))
+    }
+    assert covered == set(DIAGNOSTIC_SKILLS)
+
+
+def test_lesson_practice_uses_its_own_skills_and_rotates_overlong_lesson() -> None:
+    module = PythonFoundationsModule()
+    for unit in module.learning_units():
+        view = module.render_learning_unit(unit.unit_id)
+        mode = next(
+            item
+            for item in module.practice_modes()
+            if item.mode_id == unit.related_practice_mode_id
+        )
+        blueprint = module.session_blueprint(
+            mode.mode_id, mode.default_question_count, {}, view.practice_configuration, Random(2)
+        )
+        assert blueprint
+        assert {skill for skill, _ in blueprint} <= set(unit.skill_keys)
+        assert blueprint[0][0] == unit.skill_keys[0]
+
+    values = module.learning_units()[1]
+    first_six = values.skill_keys[:6]
+    practiced = {
+        key: MasteryState(key, attempt_count=1, state={"attempted_types": ["predict"]})
+        for key in first_six
+    }
+    second_pass = module.session_blueprint(
+        "quick",
+        6,
+        practiced,
+        module.render_learning_unit("values").practice_configuration,
+        Random(3),
+    )
+    assert second_pass[0][0] == values.skill_keys[6]
 
 
 def test_python_choices_distinguish_code_stdout_and_plain_answers() -> None:

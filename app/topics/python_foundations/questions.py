@@ -209,6 +209,10 @@ def _out(
     )
 
 
+# English prose and non-stdout check answers below are retained as internal
+# legacy descriptors, not separate student tasks. The active Russian tasks are
+# assembled by question_parts from stdout examples here and CHECKS, EDITS,
+# and DETAILS in russian_tasks.py.
 CONCEPTS: dict[str, Concept] = {
     "PY.EXEC.ORDER": _out(
         "Top-level statements run from top to bottom.",

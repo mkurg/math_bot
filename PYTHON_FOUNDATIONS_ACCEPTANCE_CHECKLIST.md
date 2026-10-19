@@ -7,19 +7,21 @@ progress, and teacher-insight infrastructure and requires no database migration.
 ## Curriculum
 
 - [x] The stable catalogue contains all 53 specified `PY.*` and `GAME.*` skill IDs.
-- [x] Prerequisites keep advanced class and Fighting work behind the required foundations.
+- [x] Adaptive practice uses prerequisites; choosing a lesson or catalog task opens that exact material directly.
 - [x] Twenty-two ordered learning units cover the diagnostic, foundations, terminology,
   all nine Fighting labs, and the optional small `d20()` bridge.
 - [x] Content consistently uses Predict → Run → Explain → Modify.
 - [x] The full AI-generated RPG, persistence, decorators, dataclasses, inheritance,
   exceptions, async code, and external packages are outside the required curriculum.
-- [x] All student-facing module content is short English suitable for a young learner.
+- [x] All student-facing module instructions and answers are in Russian; Python code remains Python.
 
 ## Practice and assessment
 
 - [x] Diagnostic, quick, exact-output, tracing, debugging, mini-script construction,
   Fighting Lab, mixed review, challenge, and weak-prerequisite modes are available.
 - [x] Every skill has recognition, prediction, and construction/debugging levels.
+- [x] The optional in-bot catalog exposes all 53 skills and all three levels in curriculum order.
+- [x] Lesson practice uses the selected lesson's skills, and short diagnostics rotate through their full pool.
 - [x] Exact-output code is compiled and executed during startup validation; simulated input
   is declared, loops terminate, and random questions never claim an uncontrolled output.
 - [x] Three progressive hints are the maximum for every question.
